@@ -20,7 +20,7 @@ type Request struct { // @TODO : добавить валидацию
 	Surname     string `json:"surname" validate:"required"`
 	Name        string `json:"name" validate:"required"`
 	MiddleName  string `json:"middle_name,omitempty"`
-	Email       string `json:"email" validate:"required"`
+	Email       string `json:"email" validate:"required,email"`
 	PhoneNumber string `json:"phone_number" validate:"required"`
 	Cabinet     string `json:"cabinet" validate:"required"`
 	Position    string `json:"position" validate:"required"`
