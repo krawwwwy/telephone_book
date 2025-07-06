@@ -96,6 +96,8 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 			log.Info(msg, slog.String("email", req.Email))
 
 			render.JSON(w, r, resp.Error(msg))
+
+			return
 		}
 		if err != nil {
 			msg := "failed to save user"
