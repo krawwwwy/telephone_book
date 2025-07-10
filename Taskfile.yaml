@@ -1,0 +1,16 @@
+version : "3"
+
+tasks:
+  postgres_migrate_up:
+    aliases:
+    - "Up"
+    desc: "Start migrations"
+    cmds:
+      -  go run ./cmd/migrator/main.go -migrations-path=./migrations
+
+  postgres_migrate_down:
+    aliases:
+    - "Down"
+    desc: "Rollback migrations"
+    cmds:
+      -  go run ./cmd/migrator/main.go -migrations-path=./migrations --down
