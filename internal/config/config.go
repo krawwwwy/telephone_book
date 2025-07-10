@@ -9,15 +9,27 @@ import (
 )
 
 type Config struct {
-	Env         string `yaml:"env" env-default:"prod"`
-	StoragePath string `yaml:"storage_path" env-required:"true"`
-	HTTPServer
+	Env         string        `yaml:"env" env-default:"prod"`
+	StoragePath string        `yaml:"storage_path" env-required:"true"`
+	Logger      string        `yaml:"logger" env-default:"default"`
+	HTTPServer  HTTPServer    `yaml:"http_server"`
+	Clients     ClientsConfig `yaml:"clients"`
 }
 
 type HTTPServer struct {
 	Address     string        `yaml:"address" env-default:"localhost:8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+}
+
+type Client struct {
+	Address      string        `yaml:"address"`
+	Timeout      time.Duration `yaml:"timeout"`
+	RetriesCount int           `yaml:"retries_count"`
+}
+
+type ClientsConfig struct {
+	SSO Client `yaml:"sso"`
 }
 
 func MustLoad() *Config {
