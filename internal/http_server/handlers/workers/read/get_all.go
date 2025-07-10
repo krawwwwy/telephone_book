@@ -19,7 +19,7 @@ type AllUsersResponse struct {
 }
 
 type AllUsersGetter interface {
-	GetAllUsers(ctx context.Context, institute string) ([]models.User, error)
+	GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error)
 }
 
 func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter) http.HandlerFunc {
@@ -38,8 +38,20 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 			render.JSON(w, r, resp.Error(msg))
 			return
 		}
+		department := r.URL.Query().Get("department")
+		if department == "" {
+			msg := "department not specified"
+			log.Error(msg)
+			render.JSON(w, r, resp.Error(msg))
+			return
+		}
 
-		users, err := allUsersGetter.GetAllUsers(ctx, institute)
+		log = log.With(
+			slog.String("institute", institute),
+			slog.String("department", department),
+		)
+
+		users, err := allUsersGetter.GetAllUsers(ctx, institute, department)
 		if err != nil {
 			msg := "failed to get users"
 			log.Error(msg, sl.Err(err))
@@ -49,9 +61,13 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 
 		log.Info("users retrieved successfully", slog.Int("count", len(users)))
 
-		render.JSON(w, r, AllUsersResponse{
-			Response: resp.OK(),
-			Users:    users,
-		})
+		responseOk(w, r, users)
 	}
+}
+
+func responseOk(w http.ResponseWriter, r *http.Request, users []models.User) {
+	render.JSON(w, r, AllUsersResponse{
+		Response: resp.OK(),
+		Users:    users,
+	})
 }

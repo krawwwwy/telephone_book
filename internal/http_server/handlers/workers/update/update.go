@@ -1,4 +1,4 @@
-package create
+package update
 
 import (
 	"context"
@@ -25,22 +25,23 @@ type Request struct {
 	MiddleName  string    `json:"middle_name,omitempty"`
 	Email       string    `json:"email" validate:"required,email"`
 	PhoneNumber string    `json:"phone_number" validate:"required"`
-	Cabinet     string    `json:"cabinet,omitempty"`
-	Position    string    `json:"position,omitempty"`
-	Department  string    `json:"department,omitempty"`
+	Cabinet     string    `json:"cabinet" validate:"required"`
+	Position    string    `json:"position" validate:"required"`
+	Department  string    `json:"department" validate:"required"`
 	BirthDate   time.Time `json:"birth_date,omitempty"`
 	Description string    `json:"description,omitempty"`
+	Photo       []byte    `json:"photo,omitempty"`
 }
 
 type Response struct {
 	resp.Response
-	UserID int `json:"user_id,omitempty"`
 }
 
-type UserCreater interface {
-	CreateUser(
+type UserUpdater interface {
+	UpdateUser(
 		ctx context.Context,
 		institute string,
+		oldEmail string,
 		surname string,
 		name string,
 		middlename string,
@@ -52,17 +53,25 @@ type UserCreater interface {
 		birthDate time.Time,
 		description string,
 		photo []byte,
-	) (int, error)
+	) error
 }
 
-func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.HandlerFunc {
+func New(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.workers.create.New"
+		const op = "handlers.workers.update.New"
 
 		log = log.With(
 			slog.String("operation", op),
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
+
+		oldEmail := r.URL.Query().Get("email")
+		if oldEmail == "" {
+			msg := "email not specified"
+			log.Error(msg)
+			render.JSON(w, r, resp.Error(msg))
+			return
+		}
 
 		var req Request
 
@@ -84,9 +93,10 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 			return
 		}
 
-		userID, err := userCreater.CreateUser(
+		err = userUpdater.UpdateUser(
 			ctx,
 			req.Institute,
+			oldEmail,
 			req.Surname,
 			req.Name,
 			req.MiddleName,
@@ -100,29 +110,30 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 			nil, // Без фотографии
 		)
 
-		if errors.Is(err, storage.ErrUserAlreadyExists) {
-			msg := "user already exists"
-			log.Warn(msg, slog.String("email", req.Email))
+		if errors.Is(err, storage.ErrUserNotFound) {
+			msg := "user not found"
+			log.Warn(msg, slog.String("email", oldEmail))
 			render.JSON(w, r, resp.Error(msg))
 			return
 		}
 
 		if err != nil {
-			msg := "failed to save user"
+			msg := "failed to update user"
 			log.Error(msg, sl.Err(err))
 			render.JSON(w, r, resp.Error(msg))
 			return
 		}
 
-		log.Info("user successfully saved", slog.String("email", req.Email))
+		log.Info("user successfully updated",
+			slog.String("old_email", oldEmail),
+			slog.String("new_email", req.Email))
 
-		responseOk(w, r, userID)
+		responseOk(w, r)
 	}
 }
 
-func responseOk(w http.ResponseWriter, r *http.Request, userID int) {
+func responseOk(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, Response{
 		Response: resp.OK(),
-		UserID:   userID,
 	})
 }
