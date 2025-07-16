@@ -1,0 +1,191 @@
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.company-name {
+  font-weight: bold;
+  color: #2e67c5;
+  font-size: 20px;
+}
+
+.header-center h1 {
+  font-size: 30px;
+  color: #2e67c5;
+  margin: 0;
+}
+
+.header-right .login-btn {
+  padding: 8px 16px;
+  background-color: #2e67c5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background-color: #1d4fa1;
+}
+
+.main-content {
+  display: flex;
+  padding: 20px 32px;
+  gap: 20px;
+}
+
+/* Левая панель */
+.sidebar {
+  width: 200px;
+  background-color: #ffffff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+}
+
+.department-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+
+.department-list li {
+  padding: 8px 0;
+  cursor: pointer;
+  color: #2e67c5;
+}
+
+/* Центральная панель */
+.center-panel {
+  flex: 1;
+  padding: 0;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 10px 12px;
+  box-sizing: border-box; 
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.employee-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+}
+
+.employee-table th, .employee-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  font-size: 14px;
+}
+
+.employee-table th {
+  background-color: #f0f4ff;
+}
+
+/* Правая панель */
+.birthday-panel {
+  width: 250px;
+  background-color: #ffffff;
+  padding: 16px;
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+}
+
+.birthday-panel h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.birthday-photo {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 14px;
+  color: #666;
+  background-color: #f0f0f0;
+}
+
+.division-links {
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.division-links a {
+  color: #333;
+  text-decoration: none;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+
+.division-links a:hover {
+  text-decoration: underline;
+  color: #2e67c5;
+}
+
+.division-links a.active-division {
+  color: #2e67c5;
+}
+
+.upcoming-birthdays {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.upcoming-birthdays h4 {
+  font-size: 14px;
+  color: #2e67c5;
+  margin-bottom: 10px;
+}
+
+.birthday-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.birthday-list li {
+  font-size: 14px;
+  color: #444;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.birthday-list li:last-child {
+  border-bottom: none;
+}
