@@ -16,6 +16,7 @@ body {
 .header-left {
   display: flex;
   align-items: center;
+  
 }
 
 .logo {
@@ -32,6 +33,8 @@ body {
 .header-center h1 {
   font-size: 30px;
   color: #2e67c5;
+  text-align: center;
+  cursor: pointer;
   margin: 0;
 }
 
@@ -189,3 +192,81 @@ body {
 .birthday-list li:last-child {
   border-bottom: none;
 }
+
+/* Стили для страницы входа */
+.login-container {
+  max-width: 400px;
+  margin: 50px auto;
+}
+
+.login-container h2 {
+  text-align: center; 
+  color: #2e67c5; 
+  font-size: 25px;
+  margin-bottom: 25px;
+  padding: 0 15px;
+}
+
+.login-form {
+  margin-top: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+}
+
+.remember input {
+  margin-right: 10px;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(to right, #1a73e8, #0d47a1);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.auth-btn:hover {
+  background: linear-gradient(to right, #0d47a1, #1a73e8);
+}
+
+.login-links {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.login-links a {
+  color: #1a73e8;
+  text-decoration: none;
+  margin: 0 10px;
+}
+
+.login-links a:hover {
+  text-decoration: underline;
+}
+
