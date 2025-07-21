@@ -12,12 +12,13 @@ import (
 	"telephone-book/internal/http_server/handlers/workers/delete"
 	"telephone-book/internal/http_server/handlers/workers/read"
 	"telephone-book/internal/http_server/handlers/workers/update"
+	"telephone-book/internal/http_server/middleware"
 	"telephone-book/internal/lib/logger/sl"
 	"telephone-book/internal/lib/logger/slogpretty"
 	"telephone-book/internal/storage/postgresql"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -49,6 +50,13 @@ func main() {
 	log.Info("sso client initialized successfully", slog.Any("sso", cfg.Clients.SSO))
 	_ = ssoClient
 
+	newUser, err := ssoClient.Register(context.Background(), "testing@mail.ru", "test")
+	if err != nil {
+		log.Error("failed test 1 grpc", sl.Err(err))
+	} else {
+		log.Debug("successfully test 1 grpc", slog.Int("user_id", int(newUser)), slog.String("method", "Register"))
+	}
+
 	storage, err := postgresql.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("failed to init storage", sl.Err(err))
@@ -57,10 +65,11 @@ func main() {
 
 	router := chi.NewRouter()
 
-	router.Use(middleware.RequestID) // tracing
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.URLFormat)
+	router.Use(chimiddleware.RequestID) // tracing
+	router.Use(chimiddleware.Logger)
+	router.Use(chimiddleware.Recoverer)
+	router.Use(chimiddleware.URLFormat)
+	router.Use(middleware.CORS) // Добавляем CORS middleware
 
 	ctx := context.Background()
 
