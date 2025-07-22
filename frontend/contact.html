@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Профиль контакта</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="logo.jpg" alt="Росатом" class="logo">
+            <span class="company-name">РОСАТОМ</span>
+        </div>
+        <div class="header-center">
+            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+        </div>
+        <div class="header-right">
+            <span class="user-name">Николаев С.И.</span>
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+        </div>
+    </header>
+
+    <main class="main-profile">
+        <nav class="breadcrumbs">Главная / Профиль контакта</nav>
+
+        <div class="profile-card">
+            <div class="profile-photo">
+                <img src="person.jpg" alt="Фото сотрудника">
+            </div>
+            <div class="profile-info">
+                <h2>Алексей Смирнов</h2>
+                <p class="position"><a href="#">Ведущий разработчик</a></p>
+                <p><strong>Отдел:</strong> Инженерный</p>
+                <p><strong>Рабочий телефон:</strong> +7 (495) 123-45-67</p>
+                <p><strong>Личный телефон:</strong> +7 (916) 765-43-21</p>
+                <p><strong>Почта:</strong> alex.smirnov@techcorp.com</p>
+                <p><strong>Дата рождения:</strong> 12 ноября</p>
+            </div>
+        </div>
+
+        <div class="profile-description">
+            <p>
+                Руководит внедрением AI-решений для оптимизации эксплуатации АЭС. Под его руководством
+                реализованы платформа предиктивной аналитики оборудования на базе machine learning и
+                система цифровых двойников для энергоблоков ВВЭР-1200.
+            </p>
+        </div>
+    </main>
+
+    <footer class="footer">
+        Если обнаружили неточность, напишите на почту it_rosatom@mail.ru<br>
+        © 2025 РОСАТОМ. Все права защищены.
+    </footer>
+
+    <script>
+        function logout() {
+            // пока просто переход на login.html
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+
+</html>
