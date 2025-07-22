@@ -69,7 +69,8 @@ func main() {
 	router.Use(chimiddleware.Logger)
 	router.Use(chimiddleware.Recoverer)
 	router.Use(chimiddleware.URLFormat)
-	router.Use(middleware.CORS) // Добавляем CORS middleware
+	router.Use(middleware.CORS)                           // Добавляем CORS middleware
+	router.Use(middleware.AuthMiddleware(ssoClient, log)) // Добавляем Auth middleware
 
 	ctx := context.Background()
 

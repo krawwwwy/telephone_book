@@ -9,9 +9,10 @@ import (
 	"telephone-book/internal/storage"
 	"time"
 
+	middleware "telephone-book/internal/http_server/middleware"
 	resp "telephone-book/internal/lib/response"
 
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator"
 )
@@ -61,8 +62,14 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 
 		log = log.With(
 			slog.String("operation", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
+			slog.String("request_id", chimw.GetReqID(r.Context())),
 		)
+
+		role := middleware.GetRole(r.Context(), log)
+		if role == middleware.RoleGuest {
+			render.JSON(w, r, resp.Error("unauthorized: only authenticated users can create workers"))
+			return
+		}
 
 		var req Request
 

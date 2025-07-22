@@ -4,11 +4,12 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"telephone-book/internal/http_server/middleware"
 	"telephone-book/internal/lib/logger/sl"
 	resp "telephone-book/internal/lib/response"
 	"telephone-book/internal/storage"
 
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
 
@@ -30,7 +31,7 @@ func New(ctx context.Context, log *slog.Logger, userDeleter UserDeleter) http.Ha
 
 		log = log.With(
 			slog.String("operation", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
+			slog.String("request_id", chimw.GetReqID(r.Context())),
 		)
 
 		email := r.URL.Query().Get("email")
@@ -46,6 +47,12 @@ func New(ctx context.Context, log *slog.Logger, userDeleter UserDeleter) http.Ha
 			msg := "institute not specified"
 			log.Error(msg)
 			render.JSON(w, r, resp.Error(msg))
+			return
+		}
+
+		role := middleware.GetRole(r.Context(), log)
+		if role != middleware.RoleAdmin {
+			render.JSON(w, r, resp.Error("unauthorized: only admin can delete users"))
 			return
 		}
 

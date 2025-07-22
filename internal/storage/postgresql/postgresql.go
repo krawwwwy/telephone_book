@@ -289,7 +289,7 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	} else {
 		// Если отдел указан, фильтруем по нему
 		query = fmt.Sprintf(
-			`SELECT surname, name, middle_name, email, phone_number, cabinet, position, department
+			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
 			FROM %s.workers WHERE department = $1 ORDER BY surname, name`,
 			schema,
 		)
