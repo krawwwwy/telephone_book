@@ -18,16 +18,20 @@
         </div>
         <div class="header-right">
             <span class="user-name">Николаев С.И.</span>
-            <button class="logout-btn" onclick="logout()">Выйти</button>
+            <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
 
     <main class="main-profile">
-        <nav class="breadcrumbs">Главная / Профиль контакта</nav>
+        <nav class="breadcrumbs">
+            <a href="index.html">Главная</a> / Профиль контакта
+        </nav>
 
         <div class="profile-card">
-            <div class="profile-photo">
-                <img src="person.jpg" alt="Фото сотрудника">
+            <div class="profile-left">
+                <div class="profile-photo">
+                    <img src="person.jpg" alt="Фото сотрудника">
+                </div>
             </div>
             <div class="profile-info">
                 <h2>Алексей Смирнов</h2>
@@ -42,12 +46,13 @@
 
         <div class="profile-description">
             <p>
-                Руководит внедрением AI-решений для оптимизации эксплуатации АЭС. Под его руководством
-                реализованы платформа предиктивной аналитики оборудования на базе machine learning и
-                система цифровых двойников для энергоблоков ВВЭР-1200.
+                Алексей — один из ключевых специалистов отдела. Под его руководством команда внедрила
+                AI-платформы для диагностики и предиктивной аналитики оборудования АЭС. Он не просто пишет код —
+                он создаёт цифровые двойники энергоблоков и превращает идеи в работающие системы.
             </p>
         </div>
     </main>
+
 
     <footer class="footer">
         Если обнаружили неточность, напишите на почту it_rosatom@mail.ru<br>
