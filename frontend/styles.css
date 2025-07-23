@@ -1,16 +1,40 @@
 body {
-  margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f7fa;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+}
+
+:root {
+    --primary: #1A397C;
+    --primary-light: #2e67c5;
+    --accent: #52B5FF;
+    --text-dark: #222;
+    --text-muted: #666;
+    --bg: #f5f7fa;
+}
+
+.btn-primary {
+    background: linear-gradient(to right, var(--primary), var(--accent));
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(to right, var(--accent), var(--primary));
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .gradient-text {
@@ -25,344 +49,411 @@ body {
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  
+    display: flex;
+    align-items: center;
+
 }
 
 .logo {
-  height: 40px;
-  margin-right: 10px;
+    height: 50px;
+    margin-right: 10px;
 }
 
 .company-name {
-  font-weight: bold;
-  color: #2e67c5;
-  font-size: 20px;
+    font-family: 'Istok Web', sans-serif;
+    font-size: 32px;
+    font-weight: bold;
+    color: #000000;
+    font-size: 20px;
 }
 
 .header-center h1 {
-  font-size: 30px;
-  color: #2e67c5;
-  text-align: center;
-  cursor: pointer;
-  margin: 0;
+    font-size: 40px;
+    color: #2e67c5;
+    text-align: center;
+    cursor: pointer;
+    margin: 0;
 }
 
 .header-right .login-btn {
-  padding: 8px 16px;
-  background-color: #2e67c5;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    padding: 8px 16px;
+    background-color: #2e67c5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .login-btn:hover {
-  background-color: #1d4fa1;
+    background-color: #1d4fa1;
 }
 
 .main-content {
-  display: flex;
-  padding: 20px 32px;
-  gap: 20px;
+    display: flex;
+    padding: 20px 32px;
+    gap: 20px;
 }
 
-/* Левая панель */
 .sidebar {
-  width: 200px;
-  background-color: #ffffff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+    width: 200px;
+    background-color: #fdfdfd;
+    padding: 16px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .department-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 10px;
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
 }
 
 .department-list li {
-  padding: 8px 0;
-  cursor: pointer;
-  color: #2e67c5;
+    padding: 8px 0;
+    cursor: pointer;
+    color: #2e67c5;
 }
 
-/* Центральная панель */
 .center-panel {
-  flex: 1;
-  padding: 0;
+    flex: 1;
+    padding: 0;
 }
 
 .search-bar {
-  width: 100%;
-  padding: 10px 12px;
-  box-sizing: border-box; 
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  margin-bottom: 20px;
-  font-size: 16px;
+    width: 100%;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    font-size: 16px;
 }
 
 .employee-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
-.employee-table th, .employee-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e0e0e0;
-  text-align: left;
-  font-size: 14px;
+.employee-table td,
+.employee-table th {
+    font-size: 16px;
+    padding: 16px;
+    line-height: 1.4;
 }
 
 .employee-table th {
-  background-color: #f0f4ff;
+    background-color: #dae9f3;
 }
 
-/* Правая панель */
+.fio-link {
+    color: #2e67c5;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.fio-link:hover {
+    text-decoration: underline;
+    color: #184492;
+}
+
 .birthday-panel {
-  width: 250px;
-  background-color: #ffffff;
-  padding: 16px;
-  text-align: center;
-  border-radius: 8px;
-  box-shadow: 0 0 4px rgba(0,0,0,0.05);
+    width: 250px;
+    background-color: #fdfdfd;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .birthday-panel h3 {
-  font-size: 16px;
-  margin-bottom: 12px;
+    font-size: 16px;
+    margin-bottom: 12px;
 }
 
 .birthday-photo {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .footer {
-  text-align: center;
-  padding: 16px;
-  font-size: 14px;
-  color: #666;
-  background-color: #f0f0f0;
+    text-align: center;
+    padding: 16px;
+    font-size: 14px;
+    color: #666;
+    background-color: #f0f0f0;
 }
 
 .division-links {
-  font-weight: bold;
-  margin-bottom: 12px;
+    font-weight: bold;
+    margin-bottom: 12px;
 }
 
 .division-links a {
-  color: #333;
-  text-decoration: none;
-  padding: 4px;
-  transition: color 0.2s ease;
+    color: #333;
+    text-decoration: none;
+    padding: 4px;
+    transition: color 0.2s ease;
 }
 
 .division-links a:hover {
-  text-decoration: underline;
-  color: #2e67c5;
+    text-decoration: underline;
+    color: #2e67c5;
 }
 
 .division-links a.active-division {
-  color: #2e67c5;
+    color: #2e67c5;
 }
 
 .upcoming-birthdays {
-  margin-top: 20px;
-  text-align: left;
+    margin-top: 20px;
+    text-align: left;
 }
 
 .upcoming-birthdays h4 {
-  font-size: 14px;
-  color: #2e67c5;
-  margin-bottom: 10px;
+    font-size: 14px;
+    color: #2e67c5;
+    margin-bottom: 10px;
 }
 
 .birthday-list {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
 }
 
 .birthday-list li {
-  font-size: 14px;
-  color: #444;
-  padding: 4px 0;
-  border-bottom: 1px solid #eee;
+    font-size: 14px;
+    color: #444;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
 }
 
 .birthday-list li:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
-/* Стили для страницы входа */
 .login-container {
-  max-width: 400px;
-  margin: 50px auto;
+    max-width: 400px;
+    margin: 50px auto;
 }
 
 .login-container h2 {
-  text-align: center; 
-  color: #2e67c5; 
-  font-size: 25px;
-  margin-bottom: 25px;
-  padding: 0 15px;
+    text-align: center;
+    color: #1A397C;
+    font-size: 25px;
+    margin-bottom: 25px;
+    padding: 0 15px;
 }
 
 .login-form {
-  margin-top: 20px;
+    margin-top: 20px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
 }
 
 .form-group input[type="text"],
 .form-group input[type="password"] {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+input[type="text"],
+input[type="password"] {
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    transition: box-shadow 0.2s ease;
+}
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
 }
 
 .remember {
-  display: flex;
-  align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 .remember input {
-  margin-right: 10px;
+    margin-right: 10px;
 }
 
 .auth-btn {
-  width: 100%;
-  padding: 12px;
-  background: linear-gradient(to right, #1a73e8, #0d47a1);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(to right, #1a73e8, #0d47a1);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
 }
 
 .auth-btn:hover {
-  background: linear-gradient(to right, #0d47a1, #1a73e8);
+    background: linear-gradient(to right, #0d47a1, #1a73e8);
 }
 
 .login-links {
-  margin-top: 20px;
-  text-align: center;
+    margin-top: 20px;
+    text-align: center;
 }
 
 .login-links a {
-  color: #1a73e8;
-  text-decoration: none;
-  margin: 0 10px;
+    color: #1a73e8;
+    text-decoration: none;
+    margin: 0 10px;
 }
 
 .login-links a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
-// страница профиля (карточка контакта)
 .main-profile {
-  padding: 30px 50px;
-  background-color: #f5f7fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    background-color: #f5f7fa;
 }
 
 .breadcrumbs {
-  font-size: 14px;
-  color: #888;
-  margin-bottom: 20px;
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #2e67c5;
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumbs a:visited {
+    color: #2e67c5;
 }
 
 .profile-card {
-  display: flex;
-  gap: 30px;
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-  align-items: center;
+    display: flex;
+    max-width: 1000px;
+    width: 100%;
+    gap: 40px;
+    padding: 30px;
+    border: 1px solid #eaeaea;
+    background-color: #fff;
+    border-radius: 12px;
+    align-items: flex-start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin: 0 auto;
+    flex-wrap: wrap;
+}
+
+.profile-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 300px;
+    flex-shrink: 0;
 }
 
 .profile-photo img {
-  width: 220px;
-  height: 220px;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 4px solid #d4e6f7;
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 20px;
+    border: 4px solid #d4e6f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 0;
 }
 
 .profile-info h2 {
-  margin: 0 0 10px;
-  font-size: 26px;
-  color: #222;
-}
-
-.profile-info .position a {
-  color: #2e67c5;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.profile-info .position a:hover {
-  text-decoration: underline;
+    font-size: 30px;
+    margin-bottom: 12px;
 }
 
 .profile-info p {
-  margin: 5px 0;
-  font-size: 15px;
-  color: #333;
+    font-size: 16px;
+    color: var(--text-dark);
+    line-height: 1.5;
+    flex: 1;
+    min-width: 250px;
 }
+
+.profile-info .position a {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.profile-info .position a:hover {
+    text-decoration: underline;
+}
+
 
 .profile-description {
-  background-color: #ffffff;
-  padding: 20px;
-  margin-top: 25px;
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  font-size: 15px;
-  color: #222;
-  line-height: 1.6;
+    background: linear-gradient(135deg, #f0f7ff, #e0ecf5);
+    padding: 16px 20px;
+    border-radius: 10px;
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    text-align: left;
+    font-style: italic;
+    border-left: 4px solid var(--primary);
+    max-width: 1050px;
+    width: 100%;
+    margin: 20px auto 0 auto;
+    box-sizing: border-box;
 }
 
-// header для авторизованного пользователя
 .user-name {
-  margin-right: 12px;
-  font-weight: 600;
-  color: #444;
+    margin-right: 12px;
+    font-weight: 600;
+    color: #444;
 }
 
 .logout-btn {
-  padding: 8px 12px;
-  background-color: #ccc;
-  color: #222;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
+    padding: 8px 12px;
+    background-color: #ccc;
+    color: #222;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
 }
 
 .logout-btn:hover {
-  background-color: #aaa;
+    background-color: #aaa;
 }
-
-
