@@ -1,117 +1,117 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Телефонный справочник</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <title>Телефонный справочник</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@700&display=swap" rel="stylesheet">
 </head>
+
 <body>
-  <header class="header">
-    <div class="header-left">
-      <img src="logo.jpg" alt="Росатом" class="logo">
-      <span class="company-name">РОСАТОМ</span>
-    </div>
-    <div class="header-center">
-      <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
-    </div>
-    <div class="header-right">
-      <button class="login-btn" onclick="location.href='login.html'">Войти</button>
-    </div>
-  </header>
+    <header class="header">
+        <div class="header-left">
+            <img src="logo.jpg" alt="Росатом" class="logo">
+            <span class="company-name">РОСАТОМ</span>
+        </div>
+        <div class="header-center">
+            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+        </div>
+        <div class="header-right">
+            <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+        </div>
+    </header>
 
-  <main class="main-content">
-    <!-- Левая колонка -->
-    <aside class="sidebar">
-  <div class="division-links">
-    <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-    <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
-  </div>
+    <main class="main-content">
+        <aside class="sidebar">
+            <div class="division-links">
+                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
+                <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
+            </div>
 
-  <ul class="department-list" id="department-list">
-    <!-- Сюда будут загружаться отделы -->
-  </ul>
-</aside>
+            <ul class="department-list" id="department-list">
+            </ul>
+        </aside>
 
 
 
-    <!-- Центральная колонка -->
-    <section class="center-panel">
-      <input type="text" class="search-bar" placeholder="Например: Иванов, Дарья, marina@gmail.com">
-      
-      <table class="employee-table">
-        <thead>
-          <tr>
-            <th>ФИО</th>
-            <th>Телефон</th>
-            <th>Кабинет</th>
-            <th>Email</th>
-            <th>Должность</th>
-            <th>Отдел</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Алексей Смирнов</td>
-            <td>+7 (495) 123-45-67</td>
-            <td>105</td>
-            <td>alex.smirnov@techcorp.com</td>
-            <td>Ведущий разработчик</td>
-            <td>Инженерный</td>
-          </tr>
-          <!-- Добавляй других сотрудников по аналогии -->
-        </tbody>
-      </table>
-    </section>
 
-    <!-- Правая колонка -->
-    <aside class="birthday-panel">
-  <h3>Поздравляем с днём рождения!</h3>
-  <img src="person.jpg" alt="Фото сотрудника" class="birthday-photo">
-  <p class="birthday-name">Иванов Иван Иванович</p>
+        <section class="center-panel">
+            <input type="text" class="search-bar" placeholder="Например: Иванов, Дарья, marina@gmail.com">
 
-  <div class="upcoming-birthdays">
-    <h4>А завтра день рождения у...</h4>
-    <ul class="birthday-list">
-      <li>Петров Пётр Петрович</li>
-      <li>Сидорова Марина Александровна</li>
-      <li>Кузнецов Иван Сергеевич</li>
-      <li>Волкова Анна Дмитриевна</li>
-      <li>Николаев Олег Викторович</li>
-    </ul>
-  </div>
-</aside>
+            <table class="employee-table">
+                <thead>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Телефон</th>
+                        <th>Кабинет</th>
+                        <th>Email</th>
+                        <th>Должность</th>
+                        <th>Отдел</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="contact.html" class="fio-link">Алексей Смирнов</a></td>
+                        <td>+7 (495) 123-45-67</td>
+                        <td>105</td>
+                        <td>alex.smirnov@techcorp.com</td>
+                        <td>Ведущий разработчик</td>
+                        <td>Инженерный</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
 
 
-  </main>
+        <aside class="birthday-panel">
+            <h3>Поздравляем с днём рождения!</h3>
+            <img src="person.jpg" alt="Фото сотрудника" class="birthday-photo">
+            <p class="birthday-name">Иванов Иван Иванович</p>
 
-  <footer class="footer">
-    Нашли неточность? Напишите на почту
-  </footer>
-<script>
-  const departments = {
-    giredmet: ["Инженерный", "Коммуникации", "Коммерческий", "Бухгалтерия"],
-    graphite: ["Проектный", "Логистика", "Финансовый контроль", "Отдел кадров"]
-  };
+            <div class="upcoming-birthdays">
+                <h4>Дни рождения завтра:</h4>
+                <ul class="birthday-list">
+                    <li>Петров Пётр Петрович</li>
+                    <li>Сидорова Марина Александровна</li>
+                    <li>Кузнецов Иван Сергеевич</li>
+                    <li>Волкова Анна Дмитриевна</li>
+                    <li>Николаев Олег Викторович</li>
+                </ul>
+            </div>
+        </aside>
 
-  function switchDivision(name) {
-    const list = document.getElementById('department-list');
-    list.innerHTML = '';
 
-    departments[name].forEach(dept => {
-      const li = document.createElement('li');
-      li.textContent = dept;
-      list.appendChild(li);
-    });
+    </main>
 
-    // Подсветка выбранной ссылки
-    document.getElementById('link-giredmet').classList.remove('active-division');
-    document.getElementById('link-graphite').classList.remove('active-division');
-    document.getElementById(`link-${name}`).classList.add('active-division');
-  }
+    <footer class="footer">
+        Нашли неточность? Напишите на почту it_rosatom@mail.ru
+    </footer>
+    <script>
+        const departments = {
+            giredmet: ["Инженерный", "Коммуникации", "Коммерческий", "Бухгалтерия"],
+            graphite: ["Проектный", "Логистика", "Финансовый контроль", "Отдел кадров"]
+        };
 
-  window.onload = () => {
-    switchDivision('giredmet'); // по умолчанию
-  };
-</script>
+        function switchDivision(name) {
+            const list = document.getElementById('department-list');
+            list.innerHTML = '';
+
+            departments[name].forEach(dept => {
+                const li = document.createElement('li');
+                li.textContent = dept;
+                list.appendChild(li);
+            });
+
+            document.getElementById('link-giredmet').classList.remove('active-division');
+            document.getElementById('link-graphite').classList.remove('active-division');
+            document.getElementById(`link-${name}`).classList.add('active-division');
+        }
+
+        window.onload = () => {
+            switchDivision('giredmet');
+        };
+    </script>
 </body>
+
 </html>
