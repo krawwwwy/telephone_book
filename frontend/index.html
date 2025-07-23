@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Телефонный справочник</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -31,41 +31,79 @@
 
             <ul class="department-list" id="department-list">
             </ul>
+            <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
         </aside>
-
-
-
-
         <section class="center-panel">
-            <input type="text" class="search-bar" placeholder="Например: Иванов, Дарья, marina@gmail.com">
+            <h2 class="header-text">Телефоны экстренных служб</h1>
+                <div class="employee-table-wrapper">
+                    <table class="employee-table">
+                        <thead>
+                            <tr>
+                                <th>Наименование</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Диспетчерская</td>
+                                <td>+7 (495) 123-45-67</td>
+                                <td>0707@rosatom.ru</td>
+                            </tr>
+                            <tr>
+                                <td>Техническая поддержка</td>
+                                <td>+7 (800) 755 75 23</td>
+                                <td>support.fgisopvk@rosatom.ru</td>
+                            </tr>
+                            <tr>
+                                <td>Пожарная охрана<br>и спасатели</td>
+                                <td>101, 112</td>
+                                <td>gu_moscow@77.mchs.gov.ru</td>
+                            </tr>
+                            <tr>
+                                <td>Полиция</td>
+                                <td>102</td>
+                                <td>gu_moscow@77.mchs.gov.ru</td>
+                            </tr>
+                            <tr>
+                                <td>Скорая помощь</td>
+                                <td>103</td>
+                                <td>gu_moscow@77.mchs.gov.ru</td>
+                            </tr>
+                            <tr>
+                                <td>Газовая аварийная<br>служба</td>
+                                <td>104</td>
+                                <td>gu_moscow@77.mchs.gov.ru</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <table class="employee-table">
-                <thead>
-                    <tr>
-                        <th>ФИО</th>
-                        <th>Телефон</th>
-                        <th>Кабинет</th>
-                        <th>Email</th>
-                        <th>Должность</th>
-                        <th>Отдел</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><a href="contact.html" class="fio-link">Алексей Смирнов</a></td>
-                        <td>+7 (495) 123-45-67</td>
-                        <td>105</td>
-                        <td>alex.smirnov@techcorp.com</td>
-                        <td>Ведущий разработчик</td>
-                        <td>Инженерный</td>
-                    </tr>
-                </tbody>
-            </table>
+                <section class="additional-info">
+                    <h2 class="header-text2">Государственная корпорация по атомной энергии «Росатом»</h1>
+                        <p><strong>Многоканальный телефон:</strong> (499) 949-4535 (с 09:00 до 18:00 по будням, в
+                            пятницу – до 16:45)</p>
+                        <p><strong>E-mail:</strong> info@rosatom.ru</p>
+                        <p><strong>Департамент коммуникаций:</strong> (499) 949-4412, 949-4634, E-mail:
+                            press@rosatom.ru, editor@rosatom.ru (об
+                            ошибках на сайте)</p>
+                        <p><strong>Департамент международного бизнеса:</strong> (499) 949-2537 (приемная)</p>
+                        <p><strong>Департамент международного сотрудничества:</strong> (499) 949-2868 (приемная)</p>
+                        <p><strong>Управление инвестиционной политики:</strong> E-mail: ir@rosatom.ru</p>
+                        <p><strong>Управление документационного обеспечения:</strong> (499) 949-4221</p>
+                        <p><strong>Департамент устойчивого развития:</strong> E-mail: esg@rosatom.ru</p>
+                        <p><strong>Архив Росатома:</strong> (498) 658-6073 (с 09:00 до 18:00 по будням, в пятницу – до
+                            16:45), E-mail:
+                            adm@atomarhiv.ru, www.atomarhiv.ru</p>
+                        <p><strong>«Горячая линия» Росатома по противодействию коррупции и хищениям:</strong> 8 800
+                            100-0707, E-mail:
+                            0707@rosatom.ru</p>
+                </section>
         </section>
 
 
         <aside class="birthday-panel">
-            <h3>Поздравляем с днём рождения!</h3>
+            <h3>Поздравляем<br>с Днём рождения!</h3>
             <img src="person.jpg" alt="Фото сотрудника" class="birthday-photo">
             <p class="birthday-name">Иванов Иван Иванович</p>
 
@@ -75,17 +113,13 @@
                     <li>Петров Пётр Петрович</li>
                     <li>Сидорова Марина Александровна</li>
                     <li>Кузнецов Иван Сергеевич</li>
-                    <li>Волкова Анна Дмитриевна</li>
-                    <li>Николаев Олег Викторович</li>
                 </ul>
             </div>
         </aside>
-
-
     </main>
 
     <footer class="footer">
-        Нашли неточность? Напишите на почту it_rosatom@mail.ru
+        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
     </footer>
     <script>
         const departments = {
@@ -100,6 +134,10 @@
             departments[name].forEach(dept => {
                 const li = document.createElement('li');
                 li.textContent = dept;
+                li.style.cursor = "pointer";
+                li.onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
+                };
                 list.appendChild(li);
             });
 
@@ -111,7 +149,76 @@
         window.onload = () => {
             switchDivision('giredmet');
         };
+
+
+        function openAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "flex";
+        }
+
+        function closeAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "none";
+        }
+
+        window.onclick = function (event) {
+            if (event.target === document.getElementById("addDepartmentModal")) {
+                closeAddDepartmentModal();
+            }
+
+        };
     </script>
+
+
+
+    <div id="addContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddContactModal()">&times;</span>
+            <h2>Добавление контакта</h2>
+            <p class="modal-subtitle">Заполните поля</p>
+            <form id="contactForm">
+                <input type="text" placeholder="ФИО контакта" required>
+                <input type="text" placeholder="Отдел" required>
+                <input type="email" placeholder="Почта" required>
+                <input type="tel" placeholder="Рабочий телефон" required>
+                <input type="text" placeholder="Описание (опционально)">
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddContactModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="addDepartmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
+            <h2>Добавление отдела</h2>
+            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
+            <form id="departmentForm">
+                <input type="text" placeholder="Название отдела" required>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeImportModal()">&times;</span>
+            <h2>Импорт контактов</h2>
+            <p class="modal-subtitle">Загрузите файл с контактами</p>
+            <form id="uploadForm" enctype="multipart/form-data" method="post">
+                <div class="file-upload-wrapper">
+                    <label for="fileInput" class="file-upload-label">Выбрать файл</label>
+                    <span id="fileName" class="file-name">Файл не выбран</span>
+                    <input type="file" name="file" id="fileInput" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Импортировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>
