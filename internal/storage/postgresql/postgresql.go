@@ -62,14 +62,16 @@ func (s *Storage) CreateUser(
 
 	var id int
 
-	query := fmt.Sprintf(
-		`INSERT INTO %s.workers (
-		surname, name, middle_name,
-		email, phone_number, cabinet,
-		position, department,
-		birth_date, description, photo)
-		  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-		schema,
+	query := fmt.Sprintf(`
+		INSERT INTO %s.workers (
+			surname, name, middle_name,
+			email, phone_number, cabinet,
+			position, department,
+			birth_date, description, photo
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+		RETURNING id,
+		`, schema,
 	)
 
 	err := s.db.QueryRowContext(
@@ -282,7 +284,7 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
 		query = fmt.Sprintf(
-			`SELECT surname, name, middle_name, email, phone_number, cabinet, position, department
+			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
 			FROM %s.workers ORDER BY surname, name`,
 			schema,
 		)
@@ -328,4 +330,142 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	}
 
 	return users, nil
+}
+
+func (s *Storage) CreateUserTx(
+	ctx context.Context,
+	tx *sql.Tx,
+	institute string,
+	surname string,
+	name string,
+	middleName string,
+	email string,
+	phoneNumber string,
+	cabinet string,
+	position string,
+	department string,
+	birthDate time.Time,
+	description string,
+	photo []byte,
+) (int, error) {
+	const op = "storage.postgresql.CreateUser"
+
+	var schema string
+	switch institute {
+	case "grafit":
+		schema = "grafit"
+	case "giredmet":
+		schema = "giredmet"
+	default:
+		return emptyID, fmt.Errorf("%s: unknown institute %s", op, institute)
+	}
+
+	var id int
+
+	query := fmt.Sprintf(`
+		INSERT INTO %s.workers (
+		surname, name, middle_name,
+		email, phone_number, cabinet,
+		position, department,
+		birth_date, description, photo
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id
+		`, schema,
+	)
+
+	err := tx.QueryRowContext(
+		ctx,
+		query,
+		surname,
+		name,
+		middleName,
+		email,
+		phoneNumber,
+		cabinet,
+		position,
+		department,
+		birthDate,
+		description,
+		photo,
+	).Scan(&id)
+
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return emptyID, storage.ErrUserAlreadyExists
+		}
+		return emptyID, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
+}
+
+func (s *Storage) ImportUsers(ctx context.Context, institute string, users []models.User) error {
+	const op = "storage.postgresql.ImportUsers"
+
+	if len(users) == 0 {
+		return fmt.Errorf("%s: no users to import", op)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("%s: failed to begin transaction: %w", op, err)
+	}
+	defer tx.Rollback()
+
+	for _, user := range users {
+		_, err := s.CreateUserTx(
+			ctx,
+			tx,
+			institute,
+			user.Surname,
+			user.Name,
+			user.MiddleName,
+			user.Email,
+			user.PhoneNumber,
+			user.Cabinet,
+			user.Position,
+			user.Department,
+			user.BirthDate,
+			user.Description,
+			user.Photo,
+		)
+		if err != nil {
+			return fmt.Errorf("%s: failed to create user %s: %w", op, user.Email, err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (s *Storage) Emergency(ctx context.Context) ([]models.Service, error) {
+	const op = "storage.postgesql.Emergency"
+
+	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(`SELECT name, phone_number, email FROM public.main`))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var services []models.Service
+	for rows.Next() {
+		var service models.Service
+
+		err := rows.Scan(
+			&service.ID,
+			&service.Name,
+			&service.PhoneNumber,
+			&service.Email,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
+		}
+		services = append(services, service)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: rows error: %w", op, err)
+	}
+
+	return services, nil
 }
