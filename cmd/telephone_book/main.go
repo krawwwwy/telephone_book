@@ -8,6 +8,10 @@ import (
 	"os"
 	sso "telephone-book/internal/clients/sso/grpc"
 	"telephone-book/internal/config"
+	"telephone-book/internal/http_server/handlers/auth/login"
+	"telephone-book/internal/http_server/handlers/auth/register"
+	"telephone-book/internal/http_server/handlers/utility/emergency"
+	imports "telephone-book/internal/http_server/handlers/utility/import"
 	"telephone-book/internal/http_server/handlers/workers/create"
 	"telephone-book/internal/http_server/handlers/workers/delete"
 	"telephone-book/internal/http_server/handlers/workers/read"
@@ -48,14 +52,6 @@ func main() {
 	}
 
 	log.Info("sso client initialized successfully", slog.Any("sso", cfg.Clients.SSO))
-	_ = ssoClient
-
-	newUser, err := ssoClient.Register(context.Background(), "testing@mail.ru", "test")
-	if err != nil {
-		log.Error("failed test 1 grpc", sl.Err(err))
-	} else {
-		log.Debug("successfully test 1 grpc", slog.Int("user_id", int(newUser)), slog.String("method", "Register"))
-	}
 
 	storage, err := postgresql.New(cfg.StoragePath)
 	if err != nil {
@@ -74,17 +70,33 @@ func main() {
 
 	ctx := context.Background()
 
-	// Create a new worker
-	router.Post("/worker", create.New(ctx, log, storage))
+	// login handler
+	router.Route("/auth", func(r chi.Router) {
+		r.Post("/", login.New(ctx, ssoClient, log))
+	})
+
+	// main handlers
+	router.Route("/main", func(r chi.Router) {
+		r.Get("/", emergency.New(ctx, log, storage))
+
+	})
 
 	// Get all workers
-	router.Get("/workers/all", read.GetAll(ctx, log, storage))
-
+	router.Get("/workers/main", read.GetAll(ctx, log, storage))
+	router.Route("/workers/admin", func(r chi.Router) {
+		r.Post("/", create.New(ctx, log, storage))
+		r.Get("/", read.GetAll(ctx, log, storage))
+		r.Put("/", update.New(ctx, log, storage))
+		r.Delete("/", delete.New(ctx, log, storage))
+		r.Post("/import", imports.New(ctx, log, storage))
+		r.Post("/register", register.New(ctx, ssoClient, log))
+	})
 	// Get, update, delete workers by ID
 	router.Route("/workers", func(r chi.Router) {
 		r.Get("/", read.GetByEmail(ctx, log, storage))
 		r.Put("/", update.New(ctx, log, storage))
-		r.Delete("/", delete.New(ctx, log, storage))
+		r.Post("/", create.New(ctx, log, storage))
+		r.Post("/import", imports.New(ctx, log, storage))
 	})
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
