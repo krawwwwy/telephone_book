@@ -1,45 +1,53 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Вход в систему</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body class="login-page">
-  <header class="header">
-    <div class="header-left">
-      <img src="logo.jpg" alt="Росатом" class="logo">
-      <span class="company-name">РОСАТОМ</span>
-    </div>
-    <div class="header-center">
-        <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
-    </div>
-    <div class="header-right">
-      
-    </div>
-  </header>
 
-  <div class="login-container">
-    <h2>Войдите в аккаунт телефонного справочника</h2>
-    <form class="login-form">
-      <div class="form-group">
-        <label for="username">Логин:</label>
-        <input type="text" id="username" name="username" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required>
-      </div>
-      <div class="form-group remember">
-        <input type="checkbox" id="remember" name="remember">
-        <label for="remember">Запомнить меня</label>
-      </div>
-      <button type="submit" class="auth-btn">Авторизоваться</button>
-    </form>
-    <div class="login-links">
-      <a href="#">Забыли пароль?</a>
-      <a href="#">Связаться с поддержкой</a>
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в систему</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="login-page">
+    <header class="header">
+        <div class="header-left">
+            <img src="logo.jpg" alt="Росатом" class="logo">
+            <span class="company-name">РОСАТОМ</span>
+        </div>
+        <div class="header-center">
+            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+        </div>
+        <div class="header-right">
+            <button class="btn-primary">Войти</button>
+        </div>
+    </header>
+
+    <div class="login-container">
+        <h2>Войдите в аккаунт телефонного справочника</h2>
+        <form class="login-form">
+            <div class="form-group">
+                <label for="username">Логин:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group remember">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Запомнить меня</label>
+            </div>
+            <button type="submit" class="auth-btn">Авторизоваться</button>
+        </form>
+        <div class="login-links">
+            <a href="#">Забыли пароль?</a>
+            <a href="#">Связаться с поддержкой</a>
+        </div>
     </div>
-  </div>
+
+    <footer class="footer">
+        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
+    </footer>
 </body>
+
 </html>

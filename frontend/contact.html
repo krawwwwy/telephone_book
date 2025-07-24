@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Профиль контакта</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -18,47 +19,158 @@
         </div>
         <div class="header-right">
             <span class="user-name">Николаев С.И.</span>
-            <button class="logout-btn" onclick="logout()">Выйти</button>
+            <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
 
     <main class="main-profile">
-        <nav class="breadcrumbs">Главная / Профиль контакта</nav>
+        <nav class="breadcrumbs" id="breadcrumbs">
+        </nav>
 
         <div class="profile-card">
-            <div class="profile-photo">
-                <img src="person.jpg" alt="Фото сотрудника">
+            <div class="profile-inner">
+                <div class="profile-left">
+                    <div class="profile-photo">
+                        <img src="person.jpg" alt="Фото сотрудника" id="profileImage">
+                    </div>
+                    <div class="photo-actions">
+                        <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                        <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
+                        <input type="file" id="photoInput" style="display: none">
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h2 id="fullName">Алексей Смирнов</h2>
+                    <p class="position"><a id="position">Ведущий разработчик</a></p>
+                    <p><strong>Отдел:</strong> <span id="department">Инженерный</span></p>
+                    <p><strong>Рабочий телефон:</strong> <span id="workPhone">+7 (495) 123-45-67</span></p>
+                    <p><strong>Личный телефон:</strong> <span id="personalPhone">+7 (916) 765-43-21</span></p>
+                    <p><strong>Почта:</strong> <span id="email">alex.smirnov@techcorp.com</span></p>
+                    <p><strong>Дата рождения:</strong> <span id="birthday">12 ноября</span></p>
+                </div>
             </div>
-            <div class="profile-info">
-                <h2>Алексей Смирнов</h2>
-                <p class="position"><a href="#">Ведущий разработчик</a></p>
-                <p><strong>Отдел:</strong> Инженерный</p>
-                <p><strong>Рабочий телефон:</strong> +7 (495) 123-45-67</p>
-                <p><strong>Личный телефон:</strong> +7 (916) 765-43-21</p>
-                <p><strong>Почта:</strong> alex.smirnov@techcorp.com</p>
-                <p><strong>Дата рождения:</strong> 12 ноября</p>
-            </div>
+
         </div>
 
         <div class="profile-description">
             <p>
-                Руководит внедрением AI-решений для оптимизации эксплуатации АЭС. Под его руководством
-                реализованы платформа предиктивной аналитики оборудования на базе machine learning и
-                система цифровых двойников для энергоблоков ВВЭР-1200.
+                Алексей — один из ключевых специалистов отдела. Под его руководством команда внедрила
+                AI-платформы для диагностики и предиктивной аналитики оборудования АЭС. Он не просто пишет код —
+                он создаёт цифровые двойники энергоблоков и превращает идеи в работающие системы.
             </p>
+        </div>
+
+        <div class="profile-actions">
+            <button class="cancel-btn">Удалить контакт</button>
+            <button class="submit-btn" onclick="openEditModal()">Редактировать</button>
         </div>
     </main>
 
     <footer class="footer">
-        Если обнаружили неточность, напишите на почту it_rosatom@mail.ru<br>
+        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru<br>
         © 2025 РОСАТОМ. Все права защищены.
     </footer>
 
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>Редактировать контакт</h2>
+            <form id="editForm">
+                <input type="text" id="editName" placeholder="ФИО" required>
+                <input type="text" id="editPosition" placeholder="Должность" required>
+                <input type="text" id="editDepartment" placeholder="Отдел" required>
+                <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
+                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
+                <input type="email" id="editEmail" placeholder="Email" required>
+                <input type="text" id="editBirthday" placeholder="Дата рождения">
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deletePhotoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePhotoDeleteModal()">&times;</span>
+            <h3>Удалить фото?</h3>
+            <p>Вы уверены, что хотите удалить фотографию?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closePhotoDeleteModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmPhotoDelete()">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function logout() {
-            // пока просто переход на login.html
-            window.location.href = 'login.html';
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const division = params.get('division');
+            const department = params.get('department');
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            let html = `<a href="index.html">Главная</a>`;
+            if (department) {
+                html += ` / <a href="departments.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}">${department}</a>`;
+            }
+            html += ` / Профиль контакта`;
+            breadcrumbs.innerHTML = html;
+        };
+
+        function openEditModal() {
+            document.getElementById('editModal').style.display = 'flex';
+            document.getElementById('editName').value = document.getElementById('fullName').innerText;
+            document.getElementById('editPosition').value = document.getElementById('position').innerText;
+            document.getElementById('editDepartment').value = document.getElementById('department').innerText;
+            document.getElementById('editWorkPhone').value = document.getElementById('workPhone').innerText;
+            document.getElementById('editPersonalPhone').value = document.getElementById('personalPhone').innerText;
+            document.getElementById('editEmail').value = document.getElementById('email').innerText;
+            document.getElementById('editBirthday').value = document.getElementById('birthday').innerText;
         }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function openPhotoUpload() {
+            document.getElementById('photoInput').click();
+        }
+
+        function openPhotoDeleteModal() {
+            document.getElementById('deletePhotoModal').style.display = 'flex';
+        }
+
+        function closePhotoDeleteModal() {
+            document.getElementById('deletePhotoModal').style.display = 'none';
+        }
+
+        function confirmPhotoDelete() {
+            document.getElementById('profileImage').src = 'placeholder.jpg';
+            closePhotoDeleteModal();
+        }
+
+        document.getElementById('photoInput').addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('profileImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            document.getElementById('fullName').innerText = document.getElementById('editName').value;
+            document.getElementById('position').innerText = document.getElementById('editPosition').value;
+            document.getElementById('department').innerText = document.getElementById('editDepartment').value;
+            document.getElementById('workPhone').innerText = document.getElementById('editWorkPhone').value;
+            document.getElementById('personalPhone').innerText = document.getElementById('editPersonalPhone').value;
+            document.getElementById('email').innerText = document.getElementById('editEmail').value;
+            document.getElementById('birthday').innerText = document.getElementById('editBirthday').value;
+            closeEditModal();
+        });
     </script>
 </body>
 

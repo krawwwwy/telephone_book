@@ -34,71 +34,45 @@
             <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
         </aside>
         <section class="center-panel">
-            <h2 class="header-text">Телефоны экстренных служб</h1>
-                <div class="employee-table-wrapper">
-                    <table class="employee-table">
-                        <thead>
-                            <tr>
-                                <th>Наименование</th>
-                                <th>Телефон</th>
-                                <th>Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Диспетчерская</td>
-                                <td>+7 (495) 123-45-67</td>
-                                <td>0707@rosatom.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Техническая поддержка</td>
-                                <td>+7 (800) 755 75 23</td>
-                                <td>support.fgisopvk@rosatom.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Пожарная охрана<br>и спасатели</td>
-                                <td>101, 112</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Полиция</td>
-                                <td>102</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Скорая помощь</td>
-                                <td>103</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Газовая аварийная<br>служба</td>
-                                <td>104</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <nav class="breadcrumbs" id="breadcrumbs">
+            </nav>
+            <input type="text" class="search-bar" placeholder="Например: Иванов, Дарья, marina@gmail.com">
+            <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
+            <button class="add-btn" onclick="openImportModal()">Импортировать</button>
+            <div class="employee-table-wrapper">
+                <table class="employee-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Телефон</th>
+                            <th>Кабинет</th>
+                            <th>Email</th>
+                            <th>Должность</th>
+                            <th>Отдел</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="contact.html" class="fio-link">Смирнов<br>А. И.</a></td>
+                            <td>+7 (495) 123-45-67</td>
+                            <td>105</td>
+                            <td>alex.smirnov@techcorp.com</td>
+                            <td>Ведущий разработчик</td>
+                            <td>Инженерный</td>
+                        </tr>
 
-                <section class="additional-info">
-                    <h2 class="header-text2">Государственная корпорация по атомной энергии «Росатом»</h1>
-                        <p><strong>Многоканальный телефон:</strong> (499) 949-4535 (с 09:00 до 18:00 по будням, в
-                            пятницу – до 16:45)</p>
-                        <p><strong>E-mail:</strong> info@rosatom.ru</p>
-                        <p><strong>Департамент коммуникаций:</strong> (499) 949-4412, 949-4634, E-mail:
-                            press@rosatom.ru, editor@rosatom.ru (об
-                            ошибках на сайте)</p>
-                        <p><strong>Департамент международного бизнеса:</strong> (499) 949-2537 (приемная)</p>
-                        <p><strong>Департамент международного сотрудничества:</strong> (499) 949-2868 (приемная)</p>
-                        <p><strong>Управление инвестиционной политики:</strong> E-mail: ir@rosatom.ru</p>
-                        <p><strong>Управление документационного обеспечения:</strong> (499) 949-4221</p>
-                        <p><strong>Департамент устойчивого развития:</strong> E-mail: esg@rosatom.ru</p>
-                        <p><strong>Архив Росатома:</strong> (498) 658-6073 (с 09:00 до 18:00 по будням, в пятницу – до
-                            16:45), E-mail:
-                            adm@atomarhiv.ru, www.atomarhiv.ru</p>
-                        <p><strong>«Горячая линия» Росатома по противодействию коррупции и хищениям:</strong> 8 800
-                            100-0707, E-mail:
-                            0707@rosatom.ru</p>
-                </section>
+
+                        <tr>
+                            <td><a href="contact.html" class="fio-link">Карцев<br>А. И.</a></td>
+                            <td>+7 (999) 987-65-43</td>
+                            <td>202</td>
+                            <td>kraken@techcorp.com</td>
+                            <td>Дедушка</td>
+                            <td>Коммуникации</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
 
@@ -116,6 +90,8 @@
                 </ul>
             </div>
         </aside>
+
+
     </main>
 
     <footer class="footer">
@@ -147,9 +123,41 @@
         }
 
         window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const division = params.get('division');
+            const department = params.get('department');
             switchDivision('giredmet');
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            if (!breadcrumbs) return;
+
+            let html = `<a href="index.html">Главная</a>`;
+
+            if (division) {
+                html += ` / ${capitalize(division)}`;
+            }
+            if (department) {
+                html += ` / ${department}`;
+            }
+
+            breadcrumbs.innerHTML = html;
         };
 
+        function capitalize(str) {
+            if (!str) return '';
+            const map = {
+                giredmet: "Гиредмет",
+                graphite: "Графит"
+            };
+            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function openAddContactModal() {
+            document.getElementById("addContactModal").style.display = "flex";
+        }
+
+        function closeAddContactModal() {
+            document.getElementById("addContactModal").style.display = "none";
+        }
 
         function openAddDepartmentModal() {
             document.getElementById("addDepartmentModal").style.display = "flex";
@@ -159,14 +167,50 @@
             document.getElementById("addDepartmentModal").style.display = "none";
         }
 
+        function openImportModal() {
+            document.getElementById("importModal").style.display = "flex";
+        }
+
+        function closeImportModal() {
+            document.getElementById("importModal").style.display = "none";
+        }
+
+        // Импорт контактов
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch('/api/import-users', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.status || 'Импорт завершён');
+            } catch (err) {
+                alert('Ошибка при импорте файла');
+                console.error(err);
+            }
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function () {
+            const fileNameSpan = document.getElementById('fileName');
+            fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
+        });
+
         window.onclick = function (event) {
+            if (event.target === document.getElementById("addContactModal")) {
+                closeAddContactModal();
+            }
+
             if (event.target === document.getElementById("addDepartmentModal")) {
                 closeAddDepartmentModal();
             }
 
+            if (event.target === document.getElementById("importModal")) {
+                closeImportModal();
+            }
         };
     </script>
-
 
 
     <div id="addContactModal" class="modal">
@@ -219,6 +263,8 @@
             </form>
         </div>
     </div>
+
+
 </body>
 
 </html>
