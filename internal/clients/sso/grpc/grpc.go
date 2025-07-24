@@ -55,7 +55,6 @@ func New(ctx context.Context,
 
 func (c *Client) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	const op = "grpc.IsAdmin"
-	
 
 	resp, err := c.api.IsAdmin(ctx, &ssov1.IsAdminRequest{
 		UserId: userID,
@@ -73,12 +72,13 @@ func InterceptorLogger(l *slog.Logger) grpclog.Logger {
 	})
 }
 
-func (c *Client) Register(ctx context.Context, email string, password string) (int64, error) {
+func (c *Client) Register(ctx context.Context, email string, password string, role string) (int64, error) {
 	const op = "grpc.Register"
 
 	resp, err := c.api.Register(ctx, &ssov1.RegisterRequest{
 		Email:    email,
 		Password: password,
+		Role:     role,
 	})
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
@@ -101,4 +101,3 @@ func (c *Client) Login(ctx context.Context, email string, password string, appID
 
 	return resp.Token, nil
 }
-
