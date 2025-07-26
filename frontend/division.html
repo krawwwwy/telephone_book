@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Контакты института</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="images/logo.jpg" alt="Росатом" class="logo">
+            <span class="company-name">РОСАТОМ</span>
+        </div>
+        <div class="header-center">
+            <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
+        </div>
+        <div class="header-right">
+            <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <aside class="sidebar">
+            <div class="division-links">
+                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
+                <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
+            </div>
+            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
+                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+            </div>
+
+            <ul class="department-list" id="department-list">
+            </ul>
+            <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
+        </aside>
+        <section class="center-panel">
+            <nav class="breadcrumbs" id="breadcrumbs">
+            </nav>
+            <div class="search-wrapper">
+                <input type="text" class="search-bar" id="search"
+                    placeholder="Например: Иванов, Дарья, marina@gmail.com">
+                <button class="search-icon-btn" onclick="handleSearchClick()"></button>
+            </div>
+            <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
+            <button class="add-btn" onclick="openImportModal()">Импортировать</button>
+            <h2 id="divisionTitle">Контакты</h2>
+            <div class="employee-table-wrapper">
+                <table class="employee-table">
+                    <thead>
+                        <tr>
+                            <th>ФИО</th>
+                            <th>Телефон</th>
+                            <th>Каб.</th>
+                            <th>Email</th>
+                            <th>Должность</th>
+                            <th>Отдел</th>
+                            <th>Подотдел</th>
+                            <th>Ред.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactsTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div id="results" class="search-results"></div>
+        </section>
+
+
+
+
+    </main>
+
+    <footer class="footer">
+        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
+    </footer>
+
+    <script>
+
+        const exampleContacts = {
+            giredmet: [
+                { name: "Иванов И.И.", phone: "+7 495 111-11-11", cab: "209", email: "ivanov@giredmet.ru", position: "Инженер", department: "Инженерный", sub: "Разработка" },
+                { name: "Петров П.П.", phone: "+7 495 222-22-22", cab: "211", email: "petrov@giredmet.ru", position: "Бухгалтер", department: "Бухгалтерия", sub: "" }
+            ],
+            graphite: [
+                { name: "Сидоров С.С.", phone: "+7 495 333-33-33", cab: "308", email: "sidorov@graphite.ru", position: "Аналитик", department: "Финансовый контроль", sub: "Бюджетирование" }
+            ]
+        };
+
+        const departments = {
+            giredmet: {
+                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
+                "Коммуникации": ["Внутренние связи", "Внешние связи"],
+                "Коммерческий": [],
+                "Бухгалтерия": []
+            },
+            graphite: {
+                "Проектный": ["Подготовка", "Реализация"],
+                "Логистика": [],
+                "Финансовый контроль": ["Аудит", "Бюджетирование"],
+                "Отдел кадров": ["Подбор", "HR-аналитика"]
+            }
+        };
+
+
+        function switchDivision(name) {
+            const list = document.getElementById('department-list');
+            list.innerHTML = '';
+
+            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
+                const li = document.createElement('li');
+                li.classList.add('department-item');
+                li.innerHTML = `<span class="department-name">${dept}</span>`;
+
+                if (subdepts.length > 0) {
+                    const subList = document.createElement('ul');
+                    subList.classList.add('subdepartment-list');
+                    subList.style.display = 'none';
+
+                    subdepts.forEach(sub => {
+                        const subLi = document.createElement('li');
+                        subLi.textContent = sub;
+                        subLi.onclick = () => {
+                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
+                        };
+                        subList.appendChild(subLi);
+                    });
+
+                    li.appendChild(subList);
+                    li.querySelector('.department-name').onclick = () => {
+                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
+                    };
+                } else {
+                    li.onclick = () => {
+                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
+                    };
+                }
+
+                list.appendChild(li);
+            });
+
+            const buttonContainer = document.getElementById('division-button-container');
+            const divisionButton = document.getElementById('current-division-btn');
+
+            buttonContainer.style.display = 'block';
+            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
+            divisionButton.onclick = () => {
+                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
+            };
+
+            document.getElementById('link-giredmet').classList.remove('active-division');
+            document.getElementById('link-graphite').classList.remove('active-division');
+            document.getElementById(`link-${name}`).classList.add('active-division');
+        }
+
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const division = params.get('division');
+            const contacts = exampleContacts[division] || [];
+            const department = params.get('department');
+            const subdepartment = params.get('subdepartment');
+
+            switchDivision('giredmet');
+
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            if (!breadcrumbs) return;
+
+            let html = `<a href="index.html">Главная</a>`;
+
+            if (division) {
+                html += ` / ${capitalize(division)}`;
+            }
+            if (department) {
+                html += ` / ${department}`;
+            }
+
+            if (subdepartment) {
+                html += ` / ${subdepartment}`;
+            }
+
+            breadcrumbs.innerHTML = html;
+            document.querySelectorAll('.fio-link').forEach(link => {
+                const name = link.textContent.trim();
+                let url = `contact.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&name=${encodeURIComponent(name)}`;
+                if (subdepartment) {
+                    url += `&subdepartment=${encodeURIComponent(subdepartment)}`;
+                }
+                link.href = url;
+            });
+
+            document.querySelectorAll('.actions-cell').forEach(cell => {
+                const tr = cell.parentElement;
+                const fio = tr.querySelector('.fio-link').textContent.trim();
+
+                const btnEdit = cell.querySelector('.icon-edit');
+                btnEdit.addEventListener('click', () => openEditFromTable(tr));
+
+                const btnDelete = cell.querySelector('.icon-delete');
+                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
+            });
+
+            document.getElementById('divisionTitle').innerText = `Контакты института "${capitalize(division)}"`;
+
+            const tbody = document.getElementById('contactsTableBody');
+            contacts.forEach(contact => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a href="contact.html" class="fio-link">${contact.name}</a></td>
+                    <td>${contact.phone || '-'}</td>
+                    <td>${contact.cab || '-'}</td>
+                    <td>${contact.email || '-'}</td>
+                    <td>${contact.position || '-'}</td>
+                    <td>${contact.department || '-'}</td>
+                    <td>${contact.sub || '-'}</td>
+                    <td class="actions-cell">
+                    <div class="actions-wrapper">
+                        <span class="icon-edit" title="Редактировать"></span>
+                        <span class="icon-delete" title="Удалить"></span>
+                    </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.querySelectorAll('.actions-cell').forEach(cell => {
+                const tr = cell.parentElement;
+
+                const btnEdit = cell.querySelector('.icon-edit');
+                btnEdit.addEventListener('click', () => openEditFromTable(tr));
+
+                const btnDelete = cell.querySelector('.icon-delete');
+                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
+            });
+        };
+
+        function capitalize(str) {
+            if (!str) return '';
+            const map = {
+                giredmet: "Гиредмет",
+                graphite: "Графит"
+            };
+            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+
+        function openAddContactModal() {
+            document.getElementById("addContactModal").style.display = "flex";
+        }
+
+        function closeAddContactModal() {
+            document.getElementById("addContactModal").style.display = "none";
+        }
+
+        function openAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "flex";
+        }
+
+        function closeAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "none";
+        }
+
+        function openImportModal() {
+            document.getElementById("importModal").style.display = "flex";
+        }
+
+        function closeImportModal() {
+            document.getElementById("importModal").style.display = "none";
+        }
+
+        function handleSearchClick() {
+            const input = document.querySelector('.search-bar');
+            const value = input.value.trim();
+            if (value) {
+                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
+            }
+        }
+
+        let contactRowToDelete = null;
+
+        function openEditFromTable(row) {
+            const fullName = row.querySelector('.fio-link').innerText;
+            const position = row.cells[4].innerText;
+            const department = row.cells[5].innerText;
+            const email = row.cells[3].innerText;
+            const workPhone = row.cells[1].innerText;
+            const room = row.cells[2].innerText;
+
+            document.getElementById('editName').value = fullName;
+            document.getElementById('editPosition').value = position;
+            document.getElementById('editDepartment').value = department;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editWorkPhone').value = workPhone;
+            document.getElementById('editBirthday').value = '';
+            document.getElementById('editPersonalPhone').value = '';
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function openDeleteFromTable(row) {
+            contactRowToDelete = row;
+            const name = row.querySelector('.fio-link').innerText;
+            const el = document.getElementById('deleteConfirmText');
+            el.innerText = `Удалить контакт "${name}"?`;
+            el.classList.add('modal-subtitle');
+            document.getElementById('deleteContactModal').style.display = 'flex';
+        }
+
+        function closeDeleteContactModal() {
+            document.getElementById('deleteContactModal').style.display = 'none';
+        }
+
+        function confirmDeleteContact() {
+            if (contactRowToDelete) {
+                contactRowToDelete.remove();
+                contactRowToDelete = null;
+            }
+            closeDeleteContactModal();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const response = await fetch('/api/import-users', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.status || 'Импорт завершён');
+            } catch (err) {
+                alert('Ошибка при импорте файла');
+                console.error(err);
+            }
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function () {
+            const fileNameSpan = document.getElementById('fileName');
+            fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
+        });
+
+        window.onclick = function (event) {
+            if (event.target === document.getElementById("addContactModal")) {
+                closeAddContactModal();
+            }
+
+            if (event.target === document.getElementById("addDepartmentModal")) {
+                closeAddDepartmentModal();
+            }
+
+            if (event.target === document.getElementById("importModal")) {
+                closeImportModal();
+            }
+        };
+
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value;
+            if (query.length < 2) return;
+
+            const params = new URLSearchParams(window.location.search);
+            const division = params.get('division') || 'giredmet';
+            const department = params.get('department') || '';
+
+            fetch(`/search?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';
+                    data.users.forEach(user => {
+                        const div = document.createElement('div');
+                        div.classList.add('search-result-row');
+                        div.innerHTML = `<strong>${user.name}</strong> (${user.email}) – каб. ${user.cabinet}`;
+                        resultsDiv.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    console.error('Ошибка поиска:', err);
+                });
+        });
+    </script>
+
+    <div id="addContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddContactModal()">&times;</span>
+            <h2>Добавление контакта</h2>
+            <p class="modal-subtitle">Заполните поля</p>
+            <form id="contactForm">
+                <input type="text" placeholder="ФИО контакта" required>
+                <input type="text" placeholder="Отдел" required>
+                <input type="email" placeholder="Почта" required>
+                <input type="tel" placeholder="Рабочий телефон" required>
+                <input type="text" placeholder="Описание (опционально)">
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddContactModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="addDepartmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
+            <h2>Добавление отдела</h2>
+            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
+            <form id="departmentForm">
+                <input type="text" placeholder="Название отдела" required>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeImportModal()">&times;</span>
+            <h2>Импорт контактов</h2>
+            <p class="modal-subtitle">Загрузите файл с контактами</p>
+            <form id="uploadForm" enctype="multipart/form-data" method="post">
+                <div class="file-upload-wrapper">
+                    <label for="fileInput" class="file-upload-label">Выбрать файл</label>
+                    <span id="fileName" class="file-name">Файл не выбран</span>
+                    <input type="file" name="file" id="fileInput" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Импортировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p class="modal-subtitle">Подтвердите удаление</p>
+
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDelete()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteContactModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p id="deleteConfirmText">Вы уверены, что хотите удалить этот контакт?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteContactModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDeleteContact()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>Редактировать контакт</h2>
+            <form id="editForm">
+                <input type="text" id="editName" placeholder="ФИО" required>
+                <input type="text" id="editPosition" placeholder="Должность" required>
+                <input type="text" id="editDepartment" placeholder="Отдел" required>
+                <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
+                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
+                <input type="email" id="editEmail" placeholder="Email" required>
+                <input type="text" id="editBirthday" placeholder="Дата рождения">
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>
