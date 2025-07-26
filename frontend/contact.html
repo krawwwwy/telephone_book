@@ -11,27 +11,26 @@
 <body>
     <header class="header">
         <div class="header-left">
-            <img src="logo.jpg" alt="Росатом" class="logo">
+            <img src="images/logo.jpg" alt="Росатом" class="logo">
             <span class="company-name">РОСАТОМ</span>
         </div>
         <div class="header-center">
-            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+            <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
-            <span class="user-name">Николаев С.И.</span>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
 
     <main class="main-profile">
+        <button class="btn-secondary" onclick="window.history.back()">Вернуться</button>
         <nav class="breadcrumbs" id="breadcrumbs">
         </nav>
-
         <div class="profile-card">
             <div class="profile-inner">
                 <div class="profile-left">
                     <div class="profile-photo">
-                        <img src="person.jpg" alt="Фото сотрудника" id="profileImage">
+                        <img src="images/person.jpg" alt="Фото сотрудника" id="profileImage">
                     </div>
                     <div class="photo-actions">
                         <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
@@ -43,6 +42,8 @@
                     <h2 id="fullName">Алексей Смирнов</h2>
                     <p class="position"><a id="position">Ведущий разработчик</a></p>
                     <p><strong>Отдел:</strong> <span id="department">Инженерный</span></p>
+                    <p><strong>Подотдел:</strong> <span id="sub">Разработка</span></p>
+                    <p><strong>Кабинет:</strong> <span id="cab">105</span></p>
                     <p><strong>Рабочий телефон:</strong> <span id="workPhone">+7 (495) 123-45-67</span></p>
                     <p><strong>Личный телефон:</strong> <span id="personalPhone">+7 (916) 765-43-21</span></p>
                     <p><strong>Почта:</strong> <span id="email">alex.smirnov@techcorp.com</span></p>
@@ -94,8 +95,8 @@
     <div id="deletePhotoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePhotoDeleteModal()">&times;</span>
-            <h3>Удалить фото?</h3>
-            <p>Вы уверены, что хотите удалить фотографию?</p>
+            <h2>Удалить фото?</h2>
+            <p class="modal-subtitle">Вы уверены, что хотите удалить фотографию?</p>
             <div class="modal-buttons">
                 <button class="cancel-btn" onclick="closePhotoDeleteModal()">Отмена</button>
                 <button class="submit-btn" onclick="confirmPhotoDelete()">Подтвердить</button>
@@ -108,14 +109,35 @@
             const params = new URLSearchParams(window.location.search);
             const division = params.get('division');
             const department = params.get('department');
+            const subdepartment = params.get('subdepartment');
+
             const breadcrumbs = document.getElementById('breadcrumbs');
             let html = `<a href="index.html">Главная</a>`;
-            if (department) {
-                html += ` / <a href="departments.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}">${department}</a>`;
+
+            if (division) {
+                const readableDivision = capitalizeDivision(division);
+                html += ` / <span>${readableDivision}</span>`;
             }
+
+            if (department) {
+                html += ` / <span>${department}</span>`;
+            }
+
+            if (subdepartment) {
+                html += ` / <a href="departments.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&subdepartment=${encodeURIComponent(subdepartment)}">${subdepartment}</a>`;
+            }
+
             html += ` / Профиль контакта`;
             breadcrumbs.innerHTML = html;
         };
+
+        function capitalizeDivision(str) {
+            const map = {
+                giredmet: "Гиредмет",
+                graphite: "Графит"
+            };
+            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
+        }
 
         function openEditModal() {
             document.getElementById('editModal').style.display = 'flex';
@@ -149,6 +171,8 @@
             closePhotoDeleteModal();
         }
 
+
+
         document.getElementById('photoInput').addEventListener('change', function () {
             const file = this.files[0];
             if (file) {
@@ -159,6 +183,8 @@
                 reader.readAsDataURL(file);
             }
         });
+
+
 
         document.getElementById('editForm').addEventListener('submit', function (e) {
             e.preventDefault();
