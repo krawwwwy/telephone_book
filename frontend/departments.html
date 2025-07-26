@@ -11,11 +11,11 @@
 <body>
     <header class="header">
         <div class="header-left">
-            <img src="logo.jpg" alt="Росатом" class="logo">
+            <img src="images/logo.jpg" alt="Росатом" class="logo">
             <span class="company-name">РОСАТОМ</span>
         </div>
         <div class="header-center">
-            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+            <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
@@ -28,6 +28,9 @@
                 <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
                 <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
             </div>
+            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
+                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+            </div>
 
             <ul class="department-list" id="department-list">
             </ul>
@@ -36,7 +39,11 @@
         <section class="center-panel">
             <nav class="breadcrumbs" id="breadcrumbs">
             </nav>
-            <input type="text" class="search-bar" placeholder="Например: Иванов, Дарья, marina@gmail.com">
+            <div class="search-wrapper">
+                <input type="text" class="search-bar" id="search"
+                    placeholder="Например: Иванов, Дарья, marina@gmail.com">
+                <button class="search-icon-btn" onclick="handleSearchClick()"></button>
+            </div>
             <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
             <button class="add-btn" onclick="openImportModal()">Импортировать</button>
             <div class="employee-table-wrapper">
@@ -45,50 +52,53 @@
                         <tr>
                             <th>ФИО</th>
                             <th>Телефон</th>
-                            <th>Кабинет</th>
+                            <th>Каб.</th>
                             <th>Email</th>
                             <th>Должность</th>
                             <th>Отдел</th>
+                            <th>Подотдел</th>
+                            <th>Ред.</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><a href="contact.html" class="fio-link">Смирнов<br>А. И.</a></td>
+                            <td><a href="contact.html" class="fio-link">Смирнов А. И.</a></td>
                             <td>+7 (495) 123-45-67</td>
                             <td>105</td>
                             <td>alex.smirnov@techcorp.com</td>
                             <td>Ведущий разработчик</td>
                             <td>Инженерный</td>
+                            <td>Разработка</td>
+                            <td class="actions-cell">
+                                <div class="actions-wrapper">
+                                    <span class="icon-edit" title="Редактировать"></span>
+                                    <span class="icon-delete" title="Удалить"></span>
+                                </div>
+                            </td>
                         </tr>
 
 
                         <tr>
-                            <td><a href="contact.html" class="fio-link">Карцев<br>А. И.</a></td>
+                            <td><a href="contact.html" class="fio-link">Карцевкарцевовный А. И.</a></td>
                             <td>+7 (999) 987-65-43</td>
                             <td>202</td>
                             <td>kraken@techcorp.com</td>
-                            <td>Дедушка</td>
+                            <td>Болтушка</td>
                             <td>Коммуникации</td>
+                            <td>Внешние коммуникации</td>
+                            <td class="actions-cell">
+                                <span class="icon-edit" title="Редактировать"></span>
+                                <span class="icon-delete" title="Удалить"></span>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div id="results" class="search-results"></div>
         </section>
 
 
-        <aside class="birthday-panel">
-            <h3>Поздравляем<br>с Днём рождения!</h3>
-            <img src="person.jpg" alt="Фото сотрудника" class="birthday-photo">
-            <p class="birthday-name">Иванов Иван Иванович</p>
 
-            <div class="upcoming-birthdays">
-                <h4>Дни рождения завтра:</h4>
-                <ul class="birthday-list">
-                    <li>Петров Пётр Петрович</li>
-                    <li>Сидорова Марина Александровна</li>
-                    <li>Кузнецов Иван Сергеевич</li>
-                </ul>
-            </div>
         </aside>
 
 
@@ -99,23 +109,65 @@
     </footer>
     <script>
         const departments = {
-            giredmet: ["Инженерный", "Коммуникации", "Коммерческий", "Бухгалтерия"],
-            graphite: ["Проектный", "Логистика", "Финансовый контроль", "Отдел кадров"]
+            giredmet: {
+                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
+                "Коммуникации": ["Внутренние связи", "Внешние связи"],
+                "Коммерческий": [],
+                "Бухгалтерия": []
+            },
+            graphite: {
+                "Проектный": ["Подготовка", "Реализация"],
+                "Логистика": [],
+                "Финансовый контроль": ["Аудит", "Бюджетирование"],
+                "Отдел кадров": ["Подбор", "HR-аналитика"]
+            }
         };
+
 
         function switchDivision(name) {
             const list = document.getElementById('department-list');
             list.innerHTML = '';
 
-            departments[name].forEach(dept => {
+            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
                 const li = document.createElement('li');
-                li.textContent = dept;
-                li.style.cursor = "pointer";
-                li.onclick = () => {
-                    window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
-                };
+                li.classList.add('department-item');
+                li.innerHTML = `<span class="department-name">${dept}</span>`;
+
+                if (subdepts.length > 0) {
+                    const subList = document.createElement('ul');
+                    subList.classList.add('subdepartment-list');
+                    subList.style.display = 'none';
+
+                    subdepts.forEach(sub => {
+                        const subLi = document.createElement('li');
+                        subLi.textContent = sub;
+                        subLi.onclick = () => {
+                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
+                        };
+                        subList.appendChild(subLi);
+                    });
+
+                    li.appendChild(subList);
+                    li.querySelector('.department-name').onclick = () => {
+                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
+                    };
+                } else {
+                    li.onclick = () => {
+                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
+                    };
+                }
+
                 list.appendChild(li);
             });
+
+            const buttonContainer = document.getElementById('division-button-container');
+            const divisionButton = document.getElementById('current-division-btn');
+
+            buttonContainer.style.display = 'block';
+            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
+            divisionButton.onclick = () => {
+                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
+            };
 
             document.getElementById('link-giredmet').classList.remove('active-division');
             document.getElementById('link-graphite').classList.remove('active-division');
@@ -126,21 +178,48 @@
             const params = new URLSearchParams(window.location.search);
             const division = params.get('division');
             const department = params.get('department');
+            const subdepartment = params.get('subdepartment');
+
             switchDivision('giredmet');
+
             const breadcrumbs = document.getElementById('breadcrumbs');
             if (!breadcrumbs) return;
 
             let html = `<a href="index.html">Главная</a>`;
 
             if (division) {
-                html += ` / ${capitalize(division)}`;
+                html += ` / <a href="division.html?division=${encodeURIComponent(division)}">${capitalize(division)}</a>`;
             }
             if (department) {
                 html += ` / ${department}`;
             }
 
+            if (subdepartment) {
+                html += ` / ${subdepartment}`;
+            }
+
             breadcrumbs.innerHTML = html;
+            document.querySelectorAll('.fio-link').forEach(link => {
+                const name = link.textContent.trim();
+                let url = `contact.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&name=${encodeURIComponent(name)}`;
+                if (subdepartment) {
+                    url += `&subdepartment=${encodeURIComponent(subdepartment)}`;
+                }
+                link.href = url;
+            });
+
+            document.querySelectorAll('.actions-cell').forEach(cell => {
+                const tr = cell.parentElement;
+                const fio = tr.querySelector('.fio-link').textContent.trim();
+
+                const btnEdit = cell.querySelector('.icon-edit');
+                btnEdit.addEventListener('click', () => openEditFromTable(tr));
+
+                const btnDelete = cell.querySelector('.icon-delete');
+                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
+            });
         };
+
 
         function capitalize(str) {
             if (!str) return '';
@@ -150,6 +229,8 @@
             };
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
+
+
 
         function openAddContactModal() {
             document.getElementById("addContactModal").style.display = "flex";
@@ -175,7 +256,60 @@
             document.getElementById("importModal").style.display = "none";
         }
 
-        // Импорт контактов
+        let contactRowToDelete = null;
+
+        function openEditFromTable(row) {
+            const fullName = row.querySelector('.fio-link').innerText;
+            const position = row.cells[4].innerText;
+            const department = row.cells[5].innerText;
+            const email = row.cells[3].innerText;
+            const workPhone = row.cells[1].innerText;
+            const room = row.cells[2].innerText;
+
+            document.getElementById('editName').value = fullName;
+            document.getElementById('editPosition').value = position;
+            document.getElementById('editDepartment').value = department;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editWorkPhone').value = workPhone;
+            document.getElementById('editBirthday').value = '';
+            document.getElementById('editPersonalPhone').value = '';
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function openDeleteFromTable(row) {
+            contactRowToDelete = row;
+            const name = row.querySelector('.fio-link').innerText;
+            const el = document.getElementById('deleteConfirmText');
+            el.innerText = `Удалить контакт "${name}"?`;
+            el.classList.add('modal-subtitle');
+            document.getElementById('deleteContactModal').style.display = 'flex';
+        }
+
+        function closeDeleteContactModal() {
+            document.getElementById('deleteContactModal').style.display = 'none';
+        }
+
+        function confirmDeleteContact() {
+            if (contactRowToDelete) {
+                contactRowToDelete.remove();
+                contactRowToDelete = null;
+            }
+            closeDeleteContactModal();
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        function handleSearchClick() {
+            const input = document.querySelector('.search-bar');
+            const value = input.value.trim();
+            if (value) {
+                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
+            }
+        }
+
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -210,6 +344,31 @@
                 closeImportModal();
             }
         };
+
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value;
+            if (query.length < 2) return;
+
+            const params = new URLSearchParams(window.location.search);
+            const division = params.get('division') || 'giredmet';
+            const department = params.get('department') || '';
+
+            fetch(`/search?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const resultsDiv = document.getElementById('results');
+                    resultsDiv.innerHTML = '';
+                    data.users.forEach(user => {
+                        const div = document.createElement('div');
+                        div.classList.add('search-result-row');
+                        div.innerHTML = `<strong>${user.name}</strong> (${user.email}) – каб. ${user.cabinet}`;
+                        resultsDiv.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    console.error('Ошибка поиска:', err);
+                });
+        });
     </script>
 
 
@@ -263,7 +422,50 @@
             </form>
         </div>
     </div>
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p class="modal-subtitle">Подтвердите удаление</p>
 
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDelete()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteContactModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p id="deleteConfirmText">Вы уверены, что хотите удалить этот контакт?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteContactModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDeleteContact()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditModal()">&times;</span>
+            <h2>Редактировать контакт</h2>
+            <form id="editForm">
+                <input type="text" id="editName" placeholder="ФИО" required>
+                <input type="text" id="editPosition" placeholder="Должность" required>
+                <input type="text" id="editDepartment" placeholder="Отдел" required>
+                <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
+                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
+                <input type="email" id="editEmail" placeholder="Email" required>
+                <input type="text" id="editBirthday" placeholder="Дата рождения">
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 </body>
 
