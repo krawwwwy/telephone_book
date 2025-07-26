@@ -37,6 +37,10 @@ h6 {
     transition: 0.5s;
 }
 
+.btn-primary {
+    padding: 16px 26px;
+}
+
 .btn-primary:hover,
 .auth-btn:hover,
 .add-btn:hover {
@@ -44,14 +48,16 @@ h6 {
     transition: 0.5s;
 }
 
-.btn-primary {
-    color: white;
+.btn-secondary {
+    color: rgb(56, 56, 56);
+    background-color: #e8e8e8;
     border: none;
-    padding: 16px 26px;
+    padding: 10px 20px;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: 0.5s;
+    margin-bottom: 10px;
 }
 
 .btn-primary:hover {
@@ -60,23 +66,47 @@ h6 {
 }
 
 .header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    padding: 24px 48px;
+    padding: 24px 0px;
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
 }
 
-.gradient-text {
+.header-left {
+    display: flex;
+    align-items: center;
+    justify-self: start;
+    padding: 0px 25px;
+}
+
+.header-center {
+    grid-column: 2;
+    justify-self: center;
+    margin: 0;
+}
+
+.header-center h1 {
     font-family: 'Istok Web', sans-serif;
-    font-size: 64px;
+    font-size: 40px;
     font-weight: 700;
     line-height: 1.2;
-    letter-spacing: 0;
+    margin: 0;
+    padding: 0;
     background: linear-gradient(#52B5FF, #224C6B);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    cursor: pointer;
+}
+
+.header-right {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    justify-self: end;
+    padding: 0px 25px;
 }
 
 .header-text {
@@ -105,11 +135,6 @@ h6 {
     -webkit-text-fill-color: transparent;
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
-
-}
 
 .logo {
     height: 50px;
@@ -122,14 +147,6 @@ h6 {
     font-weight: bold;
     color: #000000;
     font-size: 20px;
-}
-
-.header-center h1 {
-    font-size: 40px;
-    color: #2e67c5;
-    text-align: center;
-    cursor: pointer;
-    margin: 0;
 }
 
 .main-content {
@@ -149,6 +166,7 @@ h6 {
 
 .department-list {
     list-style: none;
+    font-weight: 400;
     padding: 0;
     margin-top: 10px;
 }
@@ -157,6 +175,24 @@ h6 {
     padding: 8px 0;
     cursor: pointer;
     color: #2e67c5;
+}
+
+.subdepartment-list {
+    list-style-type: circle;
+    margin-left: 20px;
+    padding-left: 10px;
+    font-size: 0.9em;
+    color: #444;
+}
+
+.department-item {
+    margin-bottom: 5px;
+}
+
+.department-name {
+    cursor: pointer;
+    font-weight: 400;
+
 }
 
 .center-panel {
@@ -182,52 +218,178 @@ additional-info {
     color: #666;
 }
 
+.emergency-table-wrapper {
+    position: relative;
+    padding: 4px;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, #c9e5fe, #6996bd);
+}
+
+.emergency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Istok Web', sans-serif;
+    font-size: 15px;
+    color: #222;
+    background-color: #fafafa;
+    text-align: center;
+    border-radius: 8px;
+    overflow: hidden;
+    border-collapse: collapse;
+}
+
+
+.emergency-table thead th {
+    background-color: #e7eff5;
+    color: #1A397C;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.emergency-table tbody tr {
+    border-bottom: 1px solid #ccc;
+}
+
+.emergency-table tbody td {
+    padding: 10px 15px;
+    vertical-align: top;
+}
+
+.emergency-table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.emergency-table tbody tr:hover {
+    background-color: #f0f7ff;
+    transition: background-color 0.5s ease;
+}
+
 .search-bar {
     width: 100%;
-    max-width: 900px;
+    min-width: 1100px;
     padding: 15px 12px;
     box-sizing: border-box;
     border-radius: 8px;
     border: 1px solid #ccc;
     margin-bottom: 20px;
     font-size: 15px;
-    min-width: 250px;
+    padding-right: 36px;
+}
+
+.search-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 1100px;
+}
+
+.search-icon-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-100%);
+    width: 20px;
+    height: 20px;
+    background-image: url('/images/search.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.search-results {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #333;
+}
+
+.search-result-row {
+    padding: 6px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.search-result-row:last-child {
+    border-bottom: none;
 }
 
 .employee-table {
+    font-family: 'Istok Web', sans-serif;
+    font-weight: 400px;
     width: 100%;
     border-collapse: collapse;
     background-color: #ffffff;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
-}
 
+}
 
 .employee-table th {
     background-color: #e7eff5;
     font-weight: 700;
     color: #1A397C;
-    text-align: left;
+    text-align: center;
     padding: 12px;
     line-height: 1.4;
+    font-size: 14px;
 }
 
 .employee-table td {
     font-weight: 400;
     padding: 12px;
-    line-height: 1.4;
+    line-height: 2;
+    font-size: 14px;
+    text-align: center;
+}
+
+.employee-table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.employee-table tbody tr:hover {
+    background-color: #f0f7ff;
+    transition: background-color 0.5s ease;
+}
+
+.employee-table td:nth-child(1),
+.employee-table th:nth-child(1) {
+    max-width: 120px;
+    white-space: normal;
+    text-align: left;
 
 }
 
 .employee-table th:nth-child(2),
 .employee-table td:nth-child(2) {
-    min-width: 160px;
+    max-width: 120px;
 }
 
 .employee-table td:nth-child(2) {
-    font-size: 15px;
     white-space: nowrap;
+}
+
+.employee-table td:nth-child(3),
+.employee-table th:nth-child(3) {
+    max-width: 90px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+
+
+.employee-table td:nth-child(4) {
+    white-space: nowrap;
+}
+
+.employee-table td:nth-child(7),
+.employee-table th:nth-child(7) {
+
+    text-align: center;
+
 }
 
 .employee-table tr {
@@ -251,6 +413,45 @@ additional-info {
     background-color: white;
     width: 100%;
     border-collapse: collapse;
+}
+
+.actions-cell {
+    padding: 0;
+    vertical-align: middle;
+    width: 40px;
+    text-align: center;
+}
+
+.actions-wrapper {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.icon-edit {
+    width: 12px;
+    height: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    display: inline-block;
+    background-image: url('/images/edit.png');
+    cursor: pointer;
+}
+
+.icon-delete {
+    width: 12px;
+    height: 12px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+    display: inline-block;
+    background-image: url('/images/delete.png');
+    cursor: pointer;
 }
 
 .link-btn {
@@ -311,6 +512,15 @@ additional-info {
     height: 120px;
     object-fit: cover;
     border-radius: 20%;
+}
+
+.birthday-name {
+    font-family: 'Istok Web', sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    display: inline-block;
+    color: #5b5b5b;
+    text-decoration: none;
 }
 
 .footer {
@@ -470,6 +680,7 @@ additional-info {
     width: 100%;
     padding: 12px;
     border: 1px solid #ddd;
+    background-color: #ffffff;
     border-radius: 4px;
     font-size: 16px;
 }
@@ -538,7 +749,7 @@ input:focus {
 }
 
 .breadcrumbs {
-    font-size: 17px;
+    font-size: 16px;
     margin-bottom: 20px;
     color: #436293;
     text-decoration: none;
@@ -750,6 +961,7 @@ input:focus {
     background-color: #a86a6a;
     color: white;
     transition: background-color 0.5s;
+    margin-top: 15px;
 }
 
 .cancel-btn:hover {
@@ -758,9 +970,10 @@ input:focus {
 }
 
 .submit-btn {
-    background-color: #d7d7d7;
+    background-color: #e8e8e8;
     color: black;
     transition: background-color 0.5s;
+    margin-top: 15px;
 }
 
 .submit-btn:hover {
