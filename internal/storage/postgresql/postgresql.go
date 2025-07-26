@@ -332,6 +332,80 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	return users, nil
 }
 
+func (s *Storage) Search(ctx context.Context, institute string, department string, info string) ([]models.User, error) {
+	const op = "storage.postgresql.Search"
+
+	var schema string
+	switch institute {
+	case "grafit":
+		schema = "grafit"
+	case "giredmet":
+		schema = "giredmet"
+	default:
+		return nil, fmt.Errorf("%s: unknown institute %s", op, institute)
+	}
+
+	var query string
+	var args []interface{}
+
+	args = append(args, "%"+info+"%")
+
+	if department == "" {
+		// Если отдел не указан, возвращаем всех пользователей
+		query = fmt.Sprintf(
+			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM %s.workers
+			WHERE surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1
+			ORDER BY surname, name`,
+			schema,
+		)
+	} else {
+		// Если отдел указан, фильтруем по нему
+		query = fmt.Sprintf(
+			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM %s.workers
+			WHERE department = $2 AND
+			(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
+			ORDER BY surname, name`,
+			schema,
+		)
+		args = append(args, department)
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+
+		err := rows.Scan(
+			&user.ID,
+			&user.Surname,
+			&user.Name,
+			&user.MiddleName,
+			&user.Email,
+			&user.PhoneNumber,
+			&user.Cabinet,
+			&user.Position,
+			&user.Department,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: rows error: %w", op, err)
+	}
+
+	return users, nil
+}
+
 func (s *Storage) CreateUserTx(
 	ctx context.Context,
 	tx *sql.Tx,
@@ -441,7 +515,7 @@ func (s *Storage) ImportUsers(ctx context.Context, institute string, users []mod
 func (s *Storage) Emergency(ctx context.Context) ([]models.Service, error) {
 	const op = "storage.postgesql.Emergency"
 
-	rows, err := s.db.QueryContext(ctx, fmt.Sprintf(`SELECT name, phone_number, email FROM public.main`))
+	rows, err := s.db.QueryContext(ctx, `SELECT name, phone_number, email FROM public.main`)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -468,4 +542,69 @@ func (s *Storage) Emergency(ctx context.Context) ([]models.Service, error) {
 	}
 
 	return services, nil
+}
+
+func (s *Storage) GetTodaysBirthdays(ctx context.Context, institute string) ([]models.User, error) {
+	return s.getBirthdaysByOffset(ctx, institute, 0)
+}
+
+func (s *Storage) GetTomorrowsBirthdays(ctx context.Context, institute string) ([]models.User, error) {
+	return s.getBirthdaysByOffset(ctx, institute, 1)
+}
+
+// Общая функция для смещения
+func (s *Storage) getBirthdaysByOffset(ctx context.Context, institute string, dayOffset int) ([]models.User, error) {
+	const op = "storage.postgresql.getBirthdaysByOffset"
+
+	var schema string
+	switch institute {
+	case "grafit":
+		schema = "grafit"
+	case "giredmet":
+		schema = "giredmet"
+	default:
+		return nil, fmt.Errorf("%s: unknown institute %s", op, institute)
+	}
+
+	// SQL: выбираем по смещению от текущей даты
+	query := fmt.Sprintf(`
+        SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date
+        FROM %s.workers
+        WHERE EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
+          AND EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '%d day')
+        ORDER BY surname, name
+    `, schema, dayOffset, dayOffset)
+
+	rows, err := s.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		err := rows.Scan(
+			&user.ID,
+			&user.Surname,
+			&user.Name,
+			&user.MiddleName,
+			&user.Email,
+			&user.PhoneNumber,
+			&user.Cabinet,
+			&user.Position,
+			&user.Department,
+			&user.BirthDate,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: rows error: %w", op, err)
+	}
+
+	return users, nil
 }
