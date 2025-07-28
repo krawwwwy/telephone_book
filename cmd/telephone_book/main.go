@@ -10,12 +10,10 @@ import (
 	"telephone-book/internal/config"
 	"telephone-book/internal/http_server/handlers/auth/login"
 	"telephone-book/internal/http_server/handlers/auth/register"
+	"telephone-book/internal/http_server/handlers/departments"
 	"telephone-book/internal/http_server/handlers/utility/emergency"
 	imports "telephone-book/internal/http_server/handlers/utility/import"
-	"telephone-book/internal/http_server/handlers/workers/create"
-	"telephone-book/internal/http_server/handlers/workers/delete"
-	"telephone-book/internal/http_server/handlers/workers/read"
-	"telephone-book/internal/http_server/handlers/workers/update"
+	"telephone-book/internal/http_server/handlers/workers"
 	"telephone-book/internal/http_server/middleware"
 	"telephone-book/internal/lib/logger/sl"
 	"telephone-book/internal/lib/logger/slogpretty"
@@ -70,33 +68,35 @@ func main() {
 
 	ctx := context.Background()
 
-	// login handler
+	// SSO
 	router.Route("/auth", func(r chi.Router) {
-		r.Post("/", login.New(ctx, ssoClient, log))
+		r.Post("/login", login.New(ctx, ssoClient, log))
+		r.Post("/register", register.New(ctx, ssoClient, log))
 	})
 
-	// main handlers
-	router.Route("/main", func(r chi.Router) {
+	// Срочные службы
+	router.Route("/emergency", func(r chi.Router) {
 		r.Get("/", emergency.New(ctx, log, storage))
 
 	})
 
-	// Get all workers
-	router.Get("/workers/main", read.GetAll(ctx, log, storage))
-	router.Route("/workers/admin", func(r chi.Router) {
-		r.Post("/", create.New(ctx, log, storage))
-		r.Get("/", read.GetAll(ctx, log, storage))
-		r.Put("/", update.New(ctx, log, storage))
-		r.Delete("/", delete.New(ctx, log, storage))
-		r.Post("/import", imports.New(ctx, log, storage))
-		r.Post("/register", register.New(ctx, ssoClient, log))
-	})
-	// Get, update, delete workers by ID
+	//Работники
 	router.Route("/workers", func(r chi.Router) {
-		r.Get("/", read.GetByEmail(ctx, log, storage))
-		r.Put("/", update.New(ctx, log, storage))
-		r.Post("/", create.New(ctx, log, storage))
+		r.Post("/", workers.Create(ctx, log, storage))
+		r.Get("/", workers.GetByEmail(ctx, log, storage))
+		r.Put("/", workers.Update(ctx, log, storage))
+		r.Delete("/", workers.Delete(ctx, log, storage))
+		r.Post("/all", workers.GetAll(ctx, log, storage))
 		r.Post("/import", imports.New(ctx, log, storage))
+	})
+
+	// Отделы
+	router.Route("/departments", func(r chi.Router) {
+		r.Get("/", departments.GetAll(ctx, log, storage))
+		r.Post("/", departments.Create(ctx, log, storage))
+		r.Put("/", departments.Update(ctx, log, storage))
+		r.Delete("/", departments.Delete(ctx, log, storage))
+		r.Get("/{department}", departments.GetSections(ctx, log, storage))
 	})
 
 	log.Info("starting server", slog.String("address", cfg.HTTPServer.Address))
