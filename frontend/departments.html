@@ -18,6 +18,9 @@
             <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
+            <a href="admin.html" class="btn-primary">
+                Админ-панель
+            </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
@@ -31,7 +34,6 @@
             <div id="division-button-container" style="margin-bottom: 20px; display: none;">
                 <button class="btn-secondary" id="current-division-btn">Все контакты</button>
             </div>
-
             <ul class="department-list" id="department-list">
             </ul>
             <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
@@ -39,14 +41,17 @@
         <section class="center-panel">
             <nav class="breadcrumbs" id="breadcrumbs">
             </nav>
+
+            <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
+            <button class="add-btn" onclick="openImportModal()">Импортировать</button>
+            <h2>Список контактов</h2>
             <div class="search-wrapper">
                 <input type="text" class="search-bar" id="search"
                     placeholder="Например: Иванов, Дарья, marina@gmail.com">
                 <button class="search-icon-btn" onclick="handleSearchClick()"></button>
             </div>
-            <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
-            <button class="add-btn" onclick="openImportModal()">Импортировать</button>
             <div class="employee-table-wrapper">
+                <div id="pagination-top" class="pagination-controls"></div>
                 <table class="employee-table">
                     <thead>
                         <tr>
@@ -77,7 +82,6 @@
                             </td>
                         </tr>
 
-
                         <tr>
                             <td><a href="contact.html" class="fio-link">Карцевкарцевовный А. И.</a></td>
                             <td>+7 (999) 987-65-43</td>
@@ -93,15 +97,11 @@
                         </tr>
                     </tbody>
                 </table>
+                <div id="pagination-bottom" class="pagination-controls"></div>
             </div>
             <div id="results" class="search-results"></div>
         </section>
-
-
-
         </aside>
-
-
     </main>
 
     <footer class="footer">
@@ -218,6 +218,8 @@
                 const btnDelete = cell.querySelector('.icon-delete');
                 btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
             });
+
+            paginateTable();
         };
 
 
@@ -238,14 +240,6 @@
 
         function closeAddContactModal() {
             document.getElementById("addContactModal").style.display = "none";
-        }
-
-        function openAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "flex";
-        }
-
-        function closeAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "none";
         }
 
         function openImportModal() {
@@ -310,6 +304,14 @@
             }
         }
 
+        function openAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "flex";
+        }
+
+        function closeAddDepartmentModal() {
+            document.getElementById("addDepartmentModal").style.display = "none";
+        }
+
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -369,6 +371,8 @@
                     console.error('Ошибка поиска:', err);
                 });
         });
+
+
     </script>
 
 
@@ -390,20 +394,7 @@
             </form>
         </div>
     </div>
-    <div id="addDepartmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
-            <h2>Добавление отдела</h2>
-            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
-            <form id="departmentForm">
-                <input type="text" placeholder="Название отдела" required>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
     <div id="importModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeImportModal()">&times;</span>
@@ -466,6 +457,95 @@
             </form>
         </div>
     </div>
+
+    <div id="addDepartmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
+            <h2>Добавление отдела</h2>
+            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
+            <form id="departmentForm">
+                <input type="text" placeholder="Название отдела" required>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        const rowsPerPage = 10;
+        let currentPage = 1;
+
+        function createPaginationControls(totalPages) {
+            const containers = [
+                document.getElementById("pagination-top"),
+                document.getElementById("pagination-bottom")
+            ];
+
+            containers.forEach(container => {
+                container.innerHTML = "";
+
+                const prevBtn = document.createElement("button");
+                prevBtn.textContent = "←";
+                prevBtn.classList.add("page-btn");
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        paginateTable();
+                    }
+                };
+                container.appendChild(prevBtn);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement("button");
+                    btn.textContent = i;
+                    btn.classList.add("page-btn");
+                    if (i === currentPage) btn.classList.add("active");
+
+                    btn.onclick = () => {
+                        currentPage = i;
+                        paginateTable();
+                    };
+                    container.appendChild(btn);
+                }
+
+                const nextBtn = document.createElement("button");
+                nextBtn.textContent = "→";
+                nextBtn.classList.add("page-btn");
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        paginateTable();
+                    }
+                };
+                container.appendChild(nextBtn);
+            });
+        }
+
+        function paginateTable() {
+            const table = document.querySelector(".employee-table tbody");
+            if (!table) return;
+
+            const rows = Array.from(table.querySelectorAll("tr"));
+            const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+            rows.forEach((row, index) => {
+                row.style.display = (index >= (currentPage - 1) * rowsPerPage && index < currentPage * rowsPerPage)
+                    ? ""
+                    : "none";
+            });
+
+            createPaginationControls(totalPages);
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            paginateTable();
+        });
+    </script>
 
 </body>
 
