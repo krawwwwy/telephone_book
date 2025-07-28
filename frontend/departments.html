@@ -81,6 +81,13 @@
     <script>
         const API_BASE = 'http://localhost:8080';
 
+        // Глобальный кэш для отделов и секций
+        const departmentsCache = {
+            giredmet: null,
+            grafit: null
+        };
+        const sectionsCache = {};
+
         // Получаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const division = urlParams.get('division') || 'giredmet';
@@ -214,21 +221,63 @@
 
         // Загрузка сотрудников
         async function loadWorkers() {
+            console.log('=== НАЧАЛО loadWorkers ===');
+            console.log('division:', division);
+            console.log('department:', department);
+            console.log('section:', section);
+            
+            // Показываем индикатор загрузки
+            const tbody = document.querySelector('.employee-table tbody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
+                            Загрузка сотрудников...
+                        </td>
+                    </tr>
+                `;
+            }
+            
             try {
-                const response = await fetch(`${API_BASE}/workers/all?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}`, {
+                // Всегда используем workers/all API, но с параметром section
+                const url = `${API_BASE}/workers/all?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&section=${encodeURIComponent(section || '')}`;
+                console.log('Отправляю запрос к workers/all API:', url);
+                
+                const response = await fetch(url, {
                     method: 'POST'
                 });
                 const data = await response.json();
                 
+                console.log('Ответ API сотрудников:', data);
+                
                 if (data.status === 'Ok' && data.users) {
-                    const tbody = document.querySelector('.employee-table tbody');
+                    if (!tbody) {
+                        console.error('Не найден tbody таблицы сотрудников!');
+                        return;
+                    }
+                    
                     tbody.innerHTML = '';
+                    console.log(`Найдено сотрудников: ${data.users.length}`);
+                    
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                                    В этом ${section ? 'подотделе' : 'отделе'} пока нет сотрудников
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
                     
                     data.users.forEach(user => {
+                        // Формируем полное имя из surname, name, middle_name
+                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${user.name}</a></td>
-                            <td>${user.phone || ''}</td>
+                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${fullName}</a></td>
+                            <td>${user.phone_number || ''}</td>
                             <td>${user.cabinet || ''}</td>
                             <td>${user.email || ''}</td>
                             <td>${user.position || ''}</td>
@@ -244,76 +293,161 @@
                         tbody.appendChild(row);
                     });
                     
+                    console.log('Сотрудники добавлены в таблицу');
+                    
                     // Настраиваем обработчики для кнопок
                     setupActionButtons();
+                } else {
+                    console.error('Ошибка загрузки сотрудников:', data.error);
+                    // Если нет сотрудников, показываем сообщение об ошибке
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                    Ошибка загрузки данных: ${data.error || 'Неизвестная ошибка'}
+                                </td>
+                            </tr>
+                        `;
+                    }
                 }
             } catch (error) {
                 console.error('Ошибка загрузки сотрудников:', error);
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                Ошибка соединения с сервером
+                            </td>
+                        </tr>
+                    `;
+                }
             }
+            
+            console.log('=== КОНЕЦ loadWorkers ===');
         }
 
-        // Загрузка отделов для сайдбара
+        // Загрузка отделов для сайдбара с кэшированием
         async function loadDepartments(institute) {
             try {
+                // Проверяем кэш
+                if (departmentsCache[institute]) {
+                    console.log(`Используем кэш отделов для ${institute}`);
+                    renderDepartments(departmentsCache[institute], institute);
+                    return;
+                }
+
                 const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
                 const data = await response.json();
                 
                 if (data.status === 'Ok' && data.departments) {
-                    const list = document.getElementById('department-list');
-                    list.innerHTML = '';
-
-                    // Загружаем секции для каждого отдела
-                    for (const dept of data.departments) {
-                        try {
-                            const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
-                            const sectionsData = await sectionsResponse.json();
-                            
-                            if (sectionsData.status === 'Ok' && sectionsData.sections) {
-                                dept.sections = sectionsData.sections;
-                            } else {
-                                dept.sections = [];
-                            }
-                        } catch (err) {
-                            console.log(`Секции для отдела ${dept.name} не найдены`);
-                            dept.sections = [];
-                        }
-                    }
-
-                    data.departments.forEach(dept => {
-                        const li = document.createElement('li');
-                        li.classList.add('department-item');
-                        li.innerHTML = `<span class="department-name">${dept.name}</span>`;
-
-                        if (dept.sections && dept.sections.length > 0) {
-                            const subList = document.createElement('ul');
-                            subList.classList.add('subdepartment-list');
-                            subList.style.display = 'none';
-
-                            dept.sections.forEach(section => {
-                                const subLi = document.createElement('li');
-                                subLi.textContent = section.name;
-                                subLi.onclick = () => {
-                                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
-                                };
-                                subList.appendChild(subLi);
-                            });
-
-                            li.appendChild(subList);
-                            li.querySelector('.department-name').onclick = () => {
-                                subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
-                            };
-                        } else {
-                            li.onclick = () => {
-                                window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
-                            };
-                        }
-
-                        list.appendChild(li);
-                    });
+                    // Сохраняем в кэш
+                    departmentsCache[institute] = data.departments;
+                    renderDepartments(data.departments, institute);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки отделов:', error);
             }
+        }
+
+        // Отрисовка отделов
+        function renderDepartments(departments, institute) {
+            const list = document.getElementById('department-list');
+            list.innerHTML = '';
+
+            departments.forEach(dept => {
+                const li = document.createElement('li');
+                li.classList.add('department-item');
+                li.innerHTML = `<span class="department-name">${dept.name}</span>`;
+
+                // Всегда делаем отдел кликабельным для перехода на страницу
+                li.querySelector('.department-name').onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
+                };
+
+                // Добавляем стрелку сразу, но секции загружаем только по клику
+                const arrow = document.createElement('span');
+                arrow.className = 'department-arrow';
+                arrow.innerHTML = ' ▼';
+                arrow.style.cursor = 'pointer';
+                arrow.style.fontSize = '12px';
+                arrow.style.marginLeft = '5px';
+                arrow.style.color = '#999';
+                li.querySelector('.department-name').appendChild(arrow);
+                
+                // Создаем пустой список секций
+                const subList = document.createElement('ul');
+                subList.classList.add('subdepartment-list');
+                subList.style.display = 'none';
+                li.appendChild(subList);
+                
+                // Обработчик для раскрытия/скрытия подотделов (только на стрелку)
+                arrow.onclick = (e) => {
+                    e.stopPropagation(); // Предотвращаем переход на страницу отдела
+                    
+                    if (subList.style.display === 'none') {
+                        // Загружаем секции только при первом раскрытии
+                        loadDepartmentSections(dept, institute, subList, arrow);
+                        subList.style.display = 'block';
+                        arrow.innerHTML = ' ▲';
+                    } else {
+                        subList.style.display = 'none';
+                        arrow.innerHTML = ' ▼';
+                    }
+                };
+
+                list.appendChild(li);
+            });
+        }
+
+        // Загрузка секций отдела по требованию
+        async function loadDepartmentSections(dept, institute, subList, arrow) {
+            const cacheKey = `${institute}-${dept.name}`;
+            
+            try {
+                // Проверяем кэш секций
+                if (sectionsCache[cacheKey]) {
+                    console.log(`Используем кэш секций для ${dept.name}`);
+                    renderSections(sectionsCache[cacheKey], dept, institute, subList);
+                    return;
+                }
+
+                // Показываем индикатор загрузки
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Загрузка...</li>';
+                
+                const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                const sectionsData = await sectionsResponse.json();
+                
+                if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                    // Сохраняем в кэш
+                    sectionsCache[cacheKey] = sectionsData.sections;
+                    renderSections(sectionsData.sections, dept, institute, subList);
+                } else {
+                    // Нет секций
+                    subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                }
+            } catch (err) {
+                console.log(`Ошибка загрузки секций для отдела ${dept.name}:`, err);
+                subList.innerHTML = '<li style="color: #d32f2f; font-style: italic;">Ошибка загрузки</li>';
+            }
+        }
+
+        // Отрисовка секций
+        function renderSections(sections, dept, institute, subList) {
+            subList.innerHTML = '';
+            
+            if (sections.length === 0) {
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                return;
+            }
+
+            sections.forEach(section => {
+                const subLi = document.createElement('li');
+                subLi.textContent = section.name;
+                subLi.onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
+                };
+                subList.appendChild(subLi);
+            });
         }
 
         // Настройка обработчиков для кнопок действий
@@ -332,176 +466,6 @@
                 }
             });
         }
-
-        // Обработка формы добавления контакта
-        document.getElementById('contactForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const inputs = e.target.querySelectorAll('input');
-            
-            const workerData = {
-                name: inputs[0].value,
-                department: inputs[1].value,
-                email: inputs[2].value,
-                phone: inputs[3].value,
-                description: inputs[4].value,
-                institute: division,
-                cabinet: '',
-                birthday: new Date().toISOString().split('T')[0]
-            };
-            
-            try {
-                const response = await fetch(`${API_BASE}/workers`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: JSON.stringify(workerData)
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'Ok') {
-                    alert('Контакт успешно добавлен');
-                    closeAddContactModal();
-                    loadWorkers();
-                    e.target.reset();
-                } else {
-                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
-                }
-            } catch (error) {
-                console.error('Ошибка при добавлении контакта:', error);
-                alert('Ошибка при добавлении контакта');
-            }
-        });
-
-        // Обработка формы добавления отдела
-        document.getElementById('departmentForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const departmentName = formData.get('name') || e.target.querySelector('input[type="text"]').value;
-            
-            try {
-                const response = await fetch(`${API_BASE}/departments`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: JSON.stringify({
-                        name: departmentName,
-                        institute: division
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'Ok') {
-                    alert('Отдел успешно добавлен');
-                    closeAddDepartmentModal();
-                    loadDepartments(division);
-                    e.target.reset();
-                } else {
-                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
-                }
-            } catch (error) {
-                console.error('Ошибка при добавлении отдела:', error);
-                alert('Ошибка при добавлении отдела');
-            }
-        });
-
-        // Обработка импорта файла
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            formData.append('institute', division);
-            
-            try {
-                const response = await fetch(`${API_BASE}/workers/import`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: formData
-                });
-                const result = await response.json();
-                
-                if (result.status === 'Ok') {
-                    alert('Импорт завершён успешно');
-                    loadWorkers();
-                } else {
-                    alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
-                }
-            } catch (err) {
-                alert('Ошибка при импорте файла');
-                console.error(err);
-            }
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function () {
-            const fileNameSpan = document.getElementById('fileName');
-            fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
-        });
-
-        window.onclick = function (event) {
-            if (event.target === document.getElementById("addContactModal")) {
-                closeAddContactModal();
-            }
-
-            if (event.target === document.getElementById("addDepartmentModal")) {
-                closeAddDepartmentModal();
-            }
-
-            if (event.target === document.getElementById("importModal")) {
-                closeImportModal();
-            }
-        };
-
-        // Поиск
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value;
-            if (query.length < 2) {
-                loadWorkers();
-                return;
-            }
-
-            fetch(`${API_BASE}/search?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&query=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'Ok' && data.users) {
-                        const tbody = document.querySelector('.employee-table tbody');
-                        tbody.innerHTML = '';
-                        
-                        data.users.forEach(user => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${user.name}</a></td>
-                                <td>${user.phone || ''}</td>
-                                <td>${user.cabinet || ''}</td>
-                                <td>${user.email || ''}</td>
-                                <td>${user.position || ''}</td>
-                                <td>${user.department || ''}</td>
-                                <td>${user.section || ''}</td>
-                                <td class="actions-cell">
-                                    <div class="actions-wrapper">
-                                        <span class="icon-edit" title="Редактировать"></span>
-                                        <span class="icon-delete" title="Удалить"></span>
-                                    </div>
-                                </td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                        
-                        setupActionButtons();
-                    }
-                })
-                .catch(err => {
-                    console.error('Ошибка поиска:', err);
-                });
-        });
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
@@ -525,6 +489,235 @@
             switchDivision(division);
             loadWorkers();
             paginateTable();
+
+            // Обработка формы добавления контакта
+            const contactForm = document.getElementById('contactForm');
+            if (contactForm) {
+                contactForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const inputs = e.target.querySelectorAll('input');
+                    
+                    const workerData = {
+                        name: inputs[0].value,
+                        department: inputs[1].value,
+                        email: inputs[2].value,
+                        phone: inputs[3].value,
+                        description: inputs[4].value,
+                        institute: division,
+                        cabinet: '',
+                        birthday: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/workers`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            },
+                            body: JSON.stringify(workerData)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'Ok') {
+                            alert('Контакт успешно добавлен');
+                            closeAddContactModal();
+                            loadWorkers();
+                            e.target.reset();
+                        } else {
+                            alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при добавлении контакта:', error);
+                        alert('Ошибка при добавлении контакта');
+                    }
+                });
+            }
+
+            // Обработка формы добавления отдела
+            const departmentForm = document.getElementById('departmentForm');
+            if (departmentForm) {
+                departmentForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(e.target);
+                    const departmentName = formData.get('name') || e.target.querySelector('input[type="text"]').value;
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/departments`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            },
+                            body: JSON.stringify({
+                                name: departmentName,
+                                institute: division
+                            })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'Ok') {
+                            alert('Отдел успешно добавлен');
+                            closeAddDepartmentModal();
+                            loadDepartments(division);
+                            e.target.reset();
+                        } else {
+                            alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при добавлении отдела:', error);
+                        alert('Ошибка при добавлении отдела');
+                    }
+                });
+            }
+
+            // Обработка импорта файла
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.target);
+                    formData.append('institute', division);
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/workers/import`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            },
+                            body: formData
+                        });
+                        const result = await response.json();
+                        
+                        if (result.status === 'Ok') {
+                            alert('Импорт завершён успешно');
+                            loadWorkers();
+                        } else {
+                            alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } catch (err) {
+                        alert('Ошибка при импорте файла');
+                        console.error(err);
+                    }
+                });
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', function () {
+                    const fileNameSpan = document.getElementById('fileName');
+                    if (fileNameSpan) {
+                        fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
+                    }
+                });
+            }
+
+            // Поиск с дебаунсингом
+            const searchInput = document.getElementById('search');
+            let searchTimeout;
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const query = this.value;
+                    
+                    // Очищаем предыдущий таймер
+                    clearTimeout(searchTimeout);
+                    
+                    if (query.length < 2) {
+                        loadWorkers();
+                        return;
+                    }
+
+                    // Показываем индикатор поиска
+                    const tbody = document.querySelector('.employee-table tbody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
+                                Поиск "${query}"...
+                            </td>
+                        </tr>
+                    `;
+
+                    // Устанавливаем новый таймер на 300мс
+                    searchTimeout = setTimeout(() => {
+                        fetch(`${API_BASE}/search?institute=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&section=${encodeURIComponent(section || '')}&query=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Результаты поиска:', data);
+                                
+                                tbody.innerHTML = '';
+                                
+                                if (data.status === 'Ok' && data.users && data.users.length > 0) {
+                                    data.users.forEach(user => {
+                                        // Формируем полное имя из surname, name, middle_name
+                                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                                        
+                                        const row = document.createElement('tr');
+                                        row.innerHTML = `
+                                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${fullName}</a></td>
+                                            <td>${user.phone_number || ''}</td>
+                                            <td>${user.cabinet || ''}</td>
+                                            <td>${user.email || ''}</td>
+                                            <td>${user.position || ''}</td>
+                                            <td>${user.department || ''}</td>
+                                            <td>${user.section || ''}</td>
+                                            <td class="actions-cell">
+                                                <div class="actions-wrapper">
+                                                    <span class="icon-edit" title="Редактировать"></span>
+                                                    <span class="icon-delete" title="Удалить"></span>
+                                                </div>
+                                            </td>
+                                        `;
+                                        tbody.appendChild(row);
+                                    });
+                                    
+                                    setupActionButtons();
+                                } else {
+                                    // Показываем сообщение о том, что работников не найдено
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td colspan="8" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                                            Работников не найдено по запросу "${query}"
+                                        </td>
+                                    `;
+                                    tbody.appendChild(row);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Ошибка поиска:', err);
+                                // Показываем сообщение об ошибке
+                                tbody.innerHTML = '';
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                        Ошибка поиска. Попробуйте еще раз.
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                    }, 300); // Задержка 300мс
+                });
+            }
+            
+            // Обработчик для закрытия модальных окон по клику вне их
+            window.onclick = function (event) {
+                if (event.target === document.getElementById("addContactModal")) {
+                    closeAddContactModal();
+                }
+
+                if (event.target === document.getElementById("addDepartmentModal")) {
+                    closeAddDepartmentModal();
+                }
+
+                if (event.target === document.getElementById("importModal")) {
+                    closeImportModal();
+                }
+            };
         });
 
     </script>

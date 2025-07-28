@@ -23,15 +23,16 @@ type AllUsersResponse struct {
 }
 
 type AllUsersGetter interface {
-	GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error)
+	GetAllUsers(ctx context.Context, institute string, department string, section string) ([]models.User, error)
 }
 
-// GetAll возвращает всех работников отдела
+// GetAll возвращает всех работников отдела или секции
 // @Summary Получить всех работников
 // @Tags workers
 // @Produce json
 // @Param institute query string true "Институт"
-// @Param department query string true "Отдел"
+// @Param department query string false "Отдел"
+// @Param section query string false "Секция"
 // @Success 200 {object} AllUsersResponse
 // @Failure 400 {object} response.Response
 // @Router /workers/all [post]
@@ -54,13 +55,16 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 
 		// department может быть пустым - тогда вернем всех сотрудников института
 		department := r.URL.Query().Get("department")
+		// section может быть пустым - тогда вернем всех сотрудников отдела
+		section := r.URL.Query().Get("section")
 
 		log = log.With(
 			slog.String("institute", institute),
 			slog.String("department", department),
+			slog.String("section", section),
 		)
 
-		users, err := allUsersGetter.GetAllUsers(ctx, institute, department)
+		users, err := allUsersGetter.GetAllUsers(ctx, institute, department, section)
 		if err != nil {
 			msg := "failed to get users"
 			log.Error(msg, sl.Err(err))

@@ -78,6 +78,13 @@
     <script>
         const API_BASE = 'http://localhost:8080';
         
+        // Глобальный кэш для отделов и секций
+        const departmentsCache = {
+            giredmet: null,
+            grafit: null
+        };
+        const sectionsCache = {};
+        
         // Загрузка экстренных служб
         async function loadEmergencyServices() {
             try {
@@ -117,9 +124,10 @@
                     todayDiv.innerHTML = '';
                     
                     todayData.users.forEach(user => {
+                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${user.name} - ${user.department}`;
+                        userDiv.innerHTML = `${fullName} - ${user.department}`;
                         todayDiv.appendChild(userDiv);
                     });
                 }
@@ -133,9 +141,10 @@
                     tomorrowDiv.innerHTML = '';
                     
                     tomorrowData.users.forEach(user => {
+                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${user.name} - ${user.department}`;
+                        userDiv.innerHTML = `${fullName} - ${user.department}`;
                         tomorrowDiv.appendChild(userDiv);
                     });
                 }
@@ -144,76 +153,135 @@
             }
         }
 
-        // Загрузка отделов с секциями
+        // Загрузка отделов с кэшированием
         async function loadDepartments(institute) {
             try {
+                // Проверяем кэш
+                if (departmentsCache[institute]) {
+                    console.log(`Используем кэш отделов для ${institute}`);
+                    renderDepartments(departmentsCache[institute], institute);
+                    return;
+                }
+
                 const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
                 const data = await response.json();
                 
                 console.log(`Отделы для ${institute}:`, data);
                 
                 if (data.status === 'Ok' && data.departments) {
-                    const list = document.getElementById('department-list');
-                    list.innerHTML = '';
-                    
-                    // Загружаем секции для каждого отдела
-                    for (const dept of data.departments) {
-                        console.log(`Загружаю секции для отдела: ${dept.name}`);
-                        try {
-                            const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
-                            const sectionsData = await sectionsResponse.json();
-                            
-                            console.log(`Секции для ${dept.name}:`, sectionsData);
-                            
-                            if (sectionsData.status === 'Ok' && sectionsData.sections) {
-                                dept.sections = sectionsData.sections;
-                            } else {
-                                console.log(`Секции не найдены для ${dept.name}:`, sectionsData.error);
-                                dept.sections = [];
-                            }
-                        } catch (err) {
-                            console.error(`Ошибка загрузки секций для отдела ${dept.name}:`, err);
-                            dept.sections = [];
-                        }
-                    }
-                    
-                    data.departments.forEach(dept => {
-                        const li = document.createElement('li');
-                        li.className = 'department-item';
-                        li.innerHTML = `<span class="department-name">${dept.name}</span>`;
-                        
-                        if (dept.sections && dept.sections.length > 0) {
-                            const subList = document.createElement('ul');
-                            subList.classList.add('subdepartment-list');
-                            subList.style.display = 'none';
-                            
-                            dept.sections.forEach(section => {
-                                const subLi = document.createElement('li');
-                                subLi.textContent = section.name;
-                                subLi.onclick = () => {
-                                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
-                                };
-                                subList.appendChild(subLi);
-                            });
-                            
-                            li.appendChild(subList);
-                            li.querySelector('.department-name').onclick = () => {
-                                subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
-                            };
-                        } else {
-                            li.onclick = () => {
-                                window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
-                            };
-                        }
-                        
-                        list.appendChild(li);
-                    });
+                    // Сохраняем в кэш
+                    departmentsCache[institute] = data.departments;
+                    renderDepartments(data.departments, institute);
                 } else {
                     console.error('Ошибка загрузки отделов:', data.error);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки отделов:', error);
             }
+        }
+
+        // Отрисовка отделов
+        function renderDepartments(departments, institute) {
+            const list = document.getElementById('department-list');
+            list.innerHTML = '';
+            
+            departments.forEach(dept => {
+                const li = document.createElement('li');
+                li.className = 'department-item';
+                li.innerHTML = `<span class="department-name">${dept.name}</span>`;
+                
+                // Всегда делаем отдел кликабельным для перехода на страницу
+                li.querySelector('.department-name').onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
+                };
+
+                // Добавляем стрелку сразу, но секции загружаем только по клику
+                const arrow = document.createElement('span');
+                arrow.className = 'department-arrow';
+                arrow.innerHTML = ' ▼';
+                arrow.style.cursor = 'pointer';
+                arrow.style.fontSize = '12px';
+                arrow.style.marginLeft = '5px';
+                arrow.style.color = '#999';
+                li.querySelector('.department-name').appendChild(arrow);
+                
+                // Создаем пустой список секций
+                const subList = document.createElement('ul');
+                subList.classList.add('subdepartment-list');
+                subList.style.display = 'none';
+                li.appendChild(subList);
+                
+                // Обработчик для раскрытия/скрытия подотделов (только на стрелку)
+                arrow.onclick = (e) => {
+                    e.stopPropagation(); // Предотвращаем переход на страницу отдела
+                    
+                    if (subList.style.display === 'none') {
+                        // Загружаем секции только при первом раскрытии
+                        loadDepartmentSections(dept, institute, subList, arrow);
+                        subList.style.display = 'block';
+                        arrow.innerHTML = ' ▲';
+                    } else {
+                        subList.style.display = 'none';
+                        arrow.innerHTML = ' ▼';
+                    }
+                };
+
+                list.appendChild(li);
+            });
+        }
+
+        // Загрузка секций отдела по требованию
+        async function loadDepartmentSections(dept, institute, subList, arrow) {
+            const cacheKey = `${institute}-${dept.name}`;
+            
+            console.log(`Загружаю секции для отдела: ${dept.name}`);
+            try {
+                // Проверяем кэш секций
+                if (sectionsCache[cacheKey]) {
+                    console.log(`Используем кэш секций для ${dept.name}`);
+                    renderSections(sectionsCache[cacheKey], dept, institute, subList);
+                    return;
+                }
+
+                // Показываем индикатор загрузки
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Загрузка...</li>';
+                
+                const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                const sectionsData = await sectionsResponse.json();
+                
+                console.log(`Секции для ${dept.name}:`, sectionsData);
+                
+                if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                    // Сохраняем в кэш
+                    sectionsCache[cacheKey] = sectionsData.sections;
+                    renderSections(sectionsData.sections, dept, institute, subList);
+                } else {
+                    console.log(`Секции не найдены для ${dept.name}:`, sectionsData.error);
+                    subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                }
+            } catch (err) {
+                console.error(`Ошибка загрузки секций для отдела ${dept.name}:`, err);
+                subList.innerHTML = '<li style="color: #d32f2f; font-style: italic;">Ошибка загрузки</li>';
+            }
+        }
+
+        // Отрисовка секций
+        function renderSections(sections, dept, institute, subList) {
+            subList.innerHTML = '';
+            
+            if (sections.length === 0) {
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                return;
+            }
+
+            sections.forEach(section => {
+                const subLi = document.createElement('li');
+                subLi.textContent = section.name;
+                subLi.onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
+                };
+                subList.appendChild(subLi);
+            });
         }
 
         function capitalize(str) {

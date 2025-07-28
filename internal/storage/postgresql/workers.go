@@ -215,7 +215,7 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 	return user, nil
 }
 
-func (s *Storage) GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error) {
+func (s *Storage) GetAllUsers(ctx context.Context, institute string, department string, section string) ([]models.User, error) {
 	const op = "storage.postgresql.GetAllUsers"
 
 	if err := s.SetSchema(ctx, institute); err != nil {
@@ -227,13 +227,18 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
 			FROM workers ORDER BY surname, name`
-	} else {
-		// Если отдел указан, фильтруем по нему
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+	} else if section == "" {
+		// Если отдел указан, но секция нет - фильтруем по отделу
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
 			FROM workers WHERE department = $1 ORDER BY surname, name`
 		args = append(args, department)
+	} else {
+		// Если указаны и отдел, и секция - фильтруем по обоим
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
+			FROM workers WHERE department = $1 AND section = $2 ORDER BY surname, name`
+		args = append(args, department, section)
 	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -256,6 +261,7 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 			&user.Cabinet,
 			&user.Position,
 			&user.Department,
+			&user.Section,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
