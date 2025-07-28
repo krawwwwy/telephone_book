@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS workers
 CREATE TABLE IF NOT EXISTS departments 
 (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL UNIQUE
 );
 
-create table if not exists sections
+CREATE TABLE IF NOT EXISTS sections
 (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS workers
 CREATE TABLE IF NOT EXISTS departments 
 (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL UNIQUE
 );
 
 create table if not exists sections
