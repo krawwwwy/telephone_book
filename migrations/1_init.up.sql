@@ -24,6 +24,20 @@ CREATE TABLE IF NOT EXISTS workers
     photo        BYTEA
 );
 
+CREATE TABLE IF NOT EXISTS departments 
+(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+);
+
+create table if not exists sections
+(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id INT NULL,
+    FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE CASCADE
+);
+
 SET search_path TO giredmet;
 
 CREATE TABLE IF NOT EXISTS workers
@@ -40,4 +54,18 @@ CREATE TABLE IF NOT EXISTS workers
     birth_date   DATE,
     description  TEXT,
     photo        BYTEA
+);
+
+CREATE TABLE IF NOT EXISTS departments 
+(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+);
+
+create table if not exists sections
+(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id INT NULL,
+    FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE CASCADE
 );

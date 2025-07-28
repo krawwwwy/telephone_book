@@ -33,17 +33,25 @@ func New(storagePath string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
+func (s *Storage) SetSchema(ctx context.Context, institute string) error {
+	var schema string
+	switch institute {
+	case "grafit", "графит", "Графит", "Grafit":
+		schema = "grafit"
+	case "giredmet", "Giredmet", "гиредмет", "Гиредмет":
+		schema = "giredmet"
+	default:
+		return storage.ErrSchemaNotExist
+	}
+	_, err := s.db.ExecContext(ctx, fmt.Sprintf(`SET search_path TO %s`, pq.QuoteIdentifier(schema)))
+	return err
+}
+
 func (s *Storage) Search(ctx context.Context, institute string, department string, info string) ([]models.User, error) {
 	const op = "storage.postgresql.Search"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return nil, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return nil, err
 	}
 
 	var query string
@@ -53,23 +61,17 @@ func (s *Storage) Search(ctx context.Context, institute string, department strin
 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
-		query = fmt.Sprintf(
-			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
-			FROM %s.workers
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM workers
 			WHERE surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1
-			ORDER BY surname, name`,
-			schema,
-		)
+			ORDER BY surname, name`
 	} else {
 		// Если отдел указан, фильтруем по нему
-		query = fmt.Sprintf(
-			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
-			FROM %s.workers
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM workers
 			WHERE department = $2 AND
 			(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
-			ORDER BY surname, name`,
-			schema,
-		)
+			ORDER BY surname, name`
 		args = append(args, department)
 	}
 
@@ -125,20 +127,14 @@ func (s *Storage) CreateUserTx(
 ) (int, error) {
 	const op = "storage.postgresql.CreateUser"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return emptyID, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return emptyID, err
 	}
 
 	var id int
 
-	query := fmt.Sprintf(`
-		INSERT INTO %s.workers (
+	query := `
+		INSERT INTO workers (
 		surname, name, middle_name,
 		email, phone_number, cabinet,
 		position, department,
@@ -146,8 +142,7 @@ func (s *Storage) CreateUserTx(
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
-		`, schema,
-	)
+		`
 
 	err := tx.QueryRowContext(
 		ctx,
@@ -177,6 +172,10 @@ func (s *Storage) CreateUserTx(
 
 func (s *Storage) ImportUsers(ctx context.Context, institute string, users []models.User) error {
 	const op = "storage.postgresql.ImportUsers"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
+	}
 
 	if len(users) == 0 {
 		return fmt.Errorf("%s: no users to import", op)
@@ -257,24 +256,18 @@ func (s *Storage) GetTomorrowsBirthdays(ctx context.Context, institute string) (
 func (s *Storage) getBirthdaysByOffset(ctx context.Context, institute string, dayOffset int) ([]models.User, error) {
 	const op = "storage.postgresql.getBirthdaysByOffset"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return nil, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return nil, err
 	}
 
 	// SQL: выбираем по смещению от текущей даты
 	query := fmt.Sprintf(`
         SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date
-        FROM %s.workers
+        FROM workers
         WHERE EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
           AND EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '%d day')
         ORDER BY surname, name
-    `, schema, dayOffset, dayOffset)
+    `, dayOffset, dayOffset)
 
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {

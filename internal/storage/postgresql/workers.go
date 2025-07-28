@@ -28,20 +28,14 @@ func (s *Storage) CreateUser(
 ) (int, error) {
 	const op = "storage.postgresql.CreateUser"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return emptyID, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return emptyID, err
 	}
 
 	var id int
 
-	query := fmt.Sprintf(`
-		INSERT INTO %s.workers (
+	query := `
+		INSERT INTO workers (
 			surname, name, middle_name,
 			email, phone_number, cabinet,
 			position, department,
@@ -49,8 +43,7 @@ func (s *Storage) CreateUser(
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
 		RETURNING id,
-		`, schema,
-	)
+		`
 
 	err := s.db.QueryRowContext(
 		ctx,
@@ -85,20 +78,11 @@ func (s *Storage) DeleteUser(
 ) error {
 	const op = "storage.postgresql.DeleteUser"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
 	}
 
-	query := fmt.Sprintf(
-		"DELETE FROM %s.workers WHERE email = $1",
-		schema,
-	)
+	query := "DELETE FROM workers WHERE email = $1"
 
 	result, err := s.db.ExecContext(ctx, query, email)
 	if err != nil {
@@ -135,18 +119,11 @@ func (s *Storage) UpdateUser(
 ) error {
 	const op = "storage.postgresql.UpdateUser"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
 	}
 
-	query := fmt.Sprintf(
-		`UPDATE %s.workers SET 
+	query := `UPDATE workers SET 
 			surname = $1, 
 			name = $2, 
 			middle_name = $3, 
@@ -158,9 +135,7 @@ func (s *Storage) UpdateUser(
 			birth_date = $9,
 			description = $10,
 			photo = $11
-		WHERE email = $12`,
-		schema,
-	)
+		WHERE email = $12`
 
 	result, err := s.db.ExecContext(
 		ctx,
@@ -200,21 +175,12 @@ func (s *Storage) UpdateUser(
 func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email string) (models.User, error) {
 	const op = "storage.postgresql.GetUserByEmail"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return models.EmptyUser, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return models.EmptyUser, err
 	}
 
-	query := fmt.Sprintf(
-		`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date, description, photo
-		FROM %s.workers WHERE email = $1`,
-		schema,
-	)
+	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date, description, photo
+		FROM workers WHERE email = $1`
 
 	var user models.User
 
@@ -246,14 +212,8 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 func (s *Storage) GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error) {
 	const op = "storage.postgresql.GetAllUsers"
 
-	var schema string
-	switch institute {
-	case "grafit":
-		schema = "grafit"
-	case "giredmet":
-		schema = "giredmet"
-	default:
-		return nil, fmt.Errorf("%s: unknown institute %s", op, institute)
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return nil, err
 	}
 
 	var query string
@@ -261,18 +221,12 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
-		query = fmt.Sprintf(
-			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
-			FROM %s.workers ORDER BY surname, name`,
-			schema,
-		)
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM workers ORDER BY surname, name`
 	} else {
 		// Если отдел указан, фильтруем по нему
-		query = fmt.Sprintf(
-			`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
-			FROM %s.workers WHERE department = $1 ORDER BY surname, name`,
-			schema,
-		)
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			FROM workers WHERE department = $1 ORDER BY surname, name`
 		args = append(args, department)
 	}
 
