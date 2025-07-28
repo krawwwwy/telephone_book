@@ -14,7 +14,8 @@ import (
 )
 
 type UpdateRequest struct {
-	Name string `json:"name"`
+	Name     string   `json:"name"`
+	Sections []string `json:"sections,omitempty"`
 }
 
 type UpdateResponse struct {
@@ -26,7 +27,8 @@ type DepartmentUpdater interface {
 		ctx context.Context,
 		institute string,
 		oldName string,
-		newName string,
+		name string,
+		sections []string,
 	) error
 }
 
@@ -51,9 +53,9 @@ func Update(ctx context.Context, log *slog.Logger, departmentUpdater DepartmentU
 
 			return
 		}
-		oldName := r.URL.Query().Get("name")
+		oldName := r.URL.Query().Get("department")
 		if oldName == "" {
-			msg := "department name is  not specified"
+			msg := "department name is not specified"
 			log.Error(msg)
 			render.JSON(w, r, resp.Error(msg))
 
@@ -77,6 +79,7 @@ func Update(ctx context.Context, log *slog.Logger, departmentUpdater DepartmentU
 			institute,
 			oldName,
 			req.Name,
+			req.Sections,
 		)
 
 		if err != nil {

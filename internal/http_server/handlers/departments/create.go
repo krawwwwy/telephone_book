@@ -14,7 +14,9 @@ import (
 )
 
 type CreateRequest struct {
-	Name string `json:"name"`
+	Name      string   `json:"name"`
+	Institute string   `json:"institute"`
+	Sections  []string `json:"sections,omitempty"` // Optional, can be used to specify sections within the department
 }
 
 type CreateResponse struct {
@@ -27,6 +29,7 @@ type DepatmentCreater interface {
 		ctx context.Context,
 		institute string,
 		name string,
+		sections []string, // Optional, can be used to specify sections within the department
 	) (int, error)
 }
 
@@ -55,25 +58,22 @@ func Create(ctx context.Context, log *slog.Logger, departmentCreater DepatmentCr
 			return
 		}
 
+		log = log.With(
+			slog.String("institute", req.Institute),
+			slog.String("department", req.Name),
+		)
+
 		log.Info("request body decoded", slog.Any("request", req))
 
-		institute := r.URL.Query().Get("institute")
-		if institute == "" {
-			msg := "institute parameter is required"
-			log.Error(msg)
-			render.JSON(w, r, resp.Error(msg))
-			return
-		}
-
-		departmentID, err := departmentCreater.CreateDepartment(ctx, institute, req.Name)
+		departmentID, err := departmentCreater.CreateDepartment(ctx, req.Institute, req.Name, req.Sections)
 		if err != nil {
-			log.Error("failed to create department", slog.String("institute", institute), sl.Err(err))
+			log.Error("failed to create department", sl.Err(err))
 			render.JSON(w, r, resp.Error(err.Error()))
 			return
 
 		}
 
-		log.Info("department successfully saved", slog.String("department", req.Name))
+		log.Info("department successfully saved")
 
 		createResponseOk(w, r, departmentID)
 	}

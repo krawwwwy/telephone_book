@@ -33,9 +33,9 @@ func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentD
 			slog.String("request_id", chimw.GetReqID(r.Context())),
 		)
 
-		name := r.URL.Query().Get("name")
-		if name == "" {
-			msg := "name not specified"
+		department := r.URL.Query().Get("department")
+		if department == "" {
+			msg := "department not specified"
 			log.Error(msg)
 			render.JSON(w, r, resp.Error(msg))
 			return
@@ -55,7 +55,7 @@ func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentD
 			return
 		}
 
-		err := departmentDeleter.DeleteDepartment(ctx, institute, name)
+		err := departmentDeleter.DeleteDepartment(ctx, institute, department)
 		if err != nil {
 			msg := "failed to delete user"
 			log.Error(msg, sl.Err(err))
@@ -64,7 +64,7 @@ func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentD
 		}
 
 		log.Info("user successfully deleted",
-			slog.String("department", name),
+			slog.String("department", department),
 			slog.String("institute", institute))
 
 		render.JSON(w, r, DeleteResponse{
