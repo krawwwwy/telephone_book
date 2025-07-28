@@ -11,11 +11,11 @@
 <body>
     <header class="header">
         <div class="header-left">
-            <img src="logo.jpg" alt="Росатом" class="logo">
+            <img src="images/logo.jpg" alt="Росатом" class="logo">
             <span class="company-name">РОСАТОМ</span>
         </div>
         <div class="header-center">
-            <h1 class="gradient-text" onclick="location.href='index.html'">Телефонный справочник</h1>
+            <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
@@ -28,6 +28,9 @@
                 <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
                 <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
             </div>
+            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
+                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+            </div>
 
             <ul class="department-list" id="department-list">
             </ul>
@@ -35,8 +38,8 @@
         </aside>
         <section class="center-panel">
             <h2 class="header-text">Телефоны экстренных служб</h1>
-                <div class="employee-table-wrapper">
-                    <table class="employee-table">
+                <div class="emergency-table-wrapper">
+                    <table class="emergency-table">
                         <thead>
                             <tr>
                                 <th>Наименование</th>
@@ -104,8 +107,10 @@
 
         <aside class="birthday-panel">
             <h3>Поздравляем<br>с Днём рождения!</h3>
-            <img src="person.jpg" alt="Фото сотрудника" class="birthday-photo">
-            <p class="birthday-name">Иванов Иван Иванович</p>
+            <img src="images/person.jpg" alt="Фото сотрудника" class="birthday-photo">
+            <a href="contact.html" class="birthday-name">
+                <br>Иванов Иван Иванович<br>
+            </a>
 
             <div class="upcoming-birthdays">
                 <h4>Дни рождения завтра:</h4>
@@ -123,28 +128,80 @@
     </footer>
     <script>
         const departments = {
-            giredmet: ["Инженерный", "Коммуникации", "Коммерческий", "Бухгалтерия"],
-            graphite: ["Проектный", "Логистика", "Финансовый контроль", "Отдел кадров"]
+            giredmet: {
+                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
+                "Коммуникации": ["Внутренние связи", "Внешние связи"],
+                "Коммерческий": [],
+                "Бухгалтерия": []
+            },
+            graphite: {
+                "Проектный": ["Подготовка", "Реализация"],
+                "Логистика": [],
+                "Финансовый контроль": ["Аудит", "Бюджетирование"],
+                "Отдел кадров": ["Подбор", "HR-аналитика"]
+            }
         };
 
         function switchDivision(name) {
             const list = document.getElementById('department-list');
+
             list.innerHTML = '';
 
-            departments[name].forEach(dept => {
+            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
                 const li = document.createElement('li');
-                li.textContent = dept;
-                li.style.cursor = "pointer";
-                li.onclick = () => {
-                    window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
-                };
+                li.classList.add('department-item');
+                li.innerHTML = `<span class="department-name">${dept}</span>`;
+
+
+                if (subdepts.length > 0) {
+                    const subList = document.createElement('ul');
+                    subList.classList.add('subdepartment-list');
+                    subList.style.display = 'none';
+
+                    subdepts.forEach(sub => {
+                        const subLi = document.createElement('li');
+                        subLi.textContent = sub;
+                        subLi.onclick = () => {
+                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
+                        };
+                        subList.appendChild(subLi);
+                    });
+
+                    li.appendChild(subList);
+                    li.querySelector('.department-name').onclick = () => {
+                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
+                    };
+                } else {
+                    li.onclick = () => {
+                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
+                    };
+                }
+
                 list.appendChild(li);
             });
+
+            const buttonContainer = document.getElementById('division-button-container');
+            const divisionButton = document.getElementById('current-division-btn');
+
+            buttonContainer.style.display = 'block';
+            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
+            divisionButton.onclick = () => {
+                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
+            };
 
             document.getElementById('link-giredmet').classList.remove('active-division');
             document.getElementById('link-graphite').classList.remove('active-division');
             document.getElementById(`link-${name}`).classList.add('active-division');
         }
+
+        function capitalize(str) {
+            const map = {
+                giredmet: "Гиредмет",
+                graphite: "Графит"
+            };
+            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
 
         window.onload = () => {
             switchDivision('giredmet');

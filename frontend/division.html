@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Телефонный справочник</title>
+    <title>Контакты института</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -46,6 +46,7 @@
             </div>
             <button class="add-btn" onclick="openAddContactModal()">Добавить контакт</button>
             <button class="add-btn" onclick="openImportModal()">Импортировать</button>
+            <h2 id="divisionTitle">Контакты</h2>
             <div class="employee-table-wrapper">
                 <table class="employee-table">
                     <thead>
@@ -60,37 +61,7 @@
                             <th>Ред.</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td><a href="contact.html" class="fio-link">Смирнов А. И.</a></td>
-                            <td>+7 (495) 123-45-67</td>
-                            <td>105</td>
-                            <td>alex.smirnov@techcorp.com</td>
-                            <td>Ведущий разработчик</td>
-                            <td>Инженерный</td>
-                            <td>Разработка</td>
-                            <td class="actions-cell">
-                                <div class="actions-wrapper">
-                                    <span class="icon-edit" title="Редактировать"></span>
-                                    <span class="icon-delete" title="Удалить"></span>
-                                </div>
-                            </td>
-                        </tr>
-
-
-                        <tr>
-                            <td><a href="contact.html" class="fio-link">Карцевкарцевовный А. И.</a></td>
-                            <td>+7 (999) 987-65-43</td>
-                            <td>202</td>
-                            <td>kraken@techcorp.com</td>
-                            <td>Болтушка</td>
-                            <td>Коммуникации</td>
-                            <td>Внешние коммуникации</td>
-                            <td class="actions-cell">
-                                <span class="icon-edit" title="Редактировать"></span>
-                                <span class="icon-delete" title="Удалить"></span>
-                            </td>
-                        </tr>
+                    <tbody id="contactsTableBody">
                     </tbody>
                 </table>
             </div>
@@ -99,15 +70,25 @@
 
 
 
-        </aside>
-
 
     </main>
 
     <footer class="footer">
         Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
     </footer>
+
     <script>
+
+        const exampleContacts = {
+            giredmet: [
+                { name: "Иванов И.И.", phone: "+7 495 111-11-11", cab: "209", email: "ivanov@giredmet.ru", position: "Инженер", department: "Инженерный", sub: "Разработка" },
+                { name: "Петров П.П.", phone: "+7 495 222-22-22", cab: "211", email: "petrov@giredmet.ru", position: "Бухгалтер", department: "Бухгалтерия", sub: "" }
+            ],
+            graphite: [
+                { name: "Сидоров С.С.", phone: "+7 495 333-33-33", cab: "308", email: "sidorov@graphite.ru", position: "Аналитик", department: "Финансовый контроль", sub: "Бюджетирование" }
+            ]
+        };
+
         const departments = {
             giredmet: {
                 "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
@@ -177,6 +158,7 @@
         window.onload = () => {
             const params = new URLSearchParams(window.location.search);
             const division = params.get('division');
+            const contacts = exampleContacts[division] || [];
             const department = params.get('department');
             const subdepartment = params.get('subdepartment');
 
@@ -188,7 +170,7 @@
             let html = `<a href="index.html">Главная</a>`;
 
             if (division) {
-                html += ` / <a href="division.html?division=${encodeURIComponent(division)}">${capitalize(division)}</a>`;
+                html += ` / ${capitalize(division)}`;
             }
             if (department) {
                 html += ` / ${department}`;
@@ -218,8 +200,40 @@
                 const btnDelete = cell.querySelector('.icon-delete');
                 btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
             });
-        };
 
+            document.getElementById('divisionTitle').innerText = `Контакты института "${capitalize(division)}"`;
+
+            const tbody = document.getElementById('contactsTableBody');
+            contacts.forEach(contact => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><a href="contact.html" class="fio-link">${contact.name}</a></td>
+                    <td>${contact.phone || '-'}</td>
+                    <td>${contact.cab || '-'}</td>
+                    <td>${contact.email || '-'}</td>
+                    <td>${contact.position || '-'}</td>
+                    <td>${contact.department || '-'}</td>
+                    <td>${contact.sub || '-'}</td>
+                    <td class="actions-cell">
+                    <div class="actions-wrapper">
+                        <span class="icon-edit" title="Редактировать"></span>
+                        <span class="icon-delete" title="Удалить"></span>
+                    </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.querySelectorAll('.actions-cell').forEach(cell => {
+                const tr = cell.parentElement;
+
+                const btnEdit = cell.querySelector('.icon-edit');
+                btnEdit.addEventListener('click', () => openEditFromTable(tr));
+
+                const btnDelete = cell.querySelector('.icon-delete');
+                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
+            });
+        };
 
         function capitalize(str) {
             if (!str) return '';
@@ -229,7 +243,6 @@
             };
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
-
 
 
         function openAddContactModal() {
@@ -254,6 +267,14 @@
 
         function closeImportModal() {
             document.getElementById("importModal").style.display = "none";
+        }
+
+        function handleSearchClick() {
+            const input = document.querySelector('.search-bar');
+            const value = input.value.trim();
+            if (value) {
+                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
+            }
         }
 
         let contactRowToDelete = null;
@@ -302,13 +323,6 @@
             document.getElementById('editModal').style.display = 'none';
         }
 
-        function handleSearchClick() {
-            const input = document.querySelector('.search-bar');
-            const value = input.value.trim();
-            if (value) {
-                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
-            }
-        }
 
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -370,7 +384,6 @@
                 });
         });
     </script>
-
 
     <div id="addContactModal" class="modal">
         <div class="modal-content">
