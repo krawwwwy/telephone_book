@@ -25,16 +25,23 @@ h6 {
 }
 
 .btn-primary,
-.auth-btn,
 .add-btn {
-    background: var(--button-primary);
-    color: white;
+    background: #e8e8e8;
+    font-family: 'Istok Web', sans-serif;
+    font-size: 15px;
+    margin: 0 10px;
+    color: #1f1f1f;
+    padding: 14px 22px;
     border: none;
-    padding: 10px 20px;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: 0.5s;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    box-shadow:
+        inset 0 -3em 3em rgba(238, 252, 255, 0.3),
+        0 0 0 2px white,
+        0.3em 0.3em 1em rgba(187, 187, 187, 0.6);
 }
 
 .btn-primary {
@@ -42,27 +49,52 @@ h6 {
 }
 
 .btn-primary:hover,
-.auth-btn:hover,
 .add-btn:hover {
-    background: #253642;
-    transition: 0.5s;
+    background: #dae8f6;
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
     color: rgb(56, 56, 56);
-    background-color: #e8e8e8;
+    background-color: #e7eff5;
     border: none;
     padding: 10px 20px;
-    border-radius: 12px;
+    border-radius: 25px;
     font-weight: 600;
     cursor: pointer;
     transition: 0.5s;
     margin-bottom: 10px;
 }
 
-.btn-primary:hover {
-    background: #497b9e;
-    transition: 0.5s;
+.btn-secondary:hover {
+    background: #eff2f4;
+    transform: translateY(-1px);
+}
+
+.edit-btn,
+.delete-btn {
+    background-color: #ededed;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 15px 15px;
+    font-size: 14px;
+}
+
+.edit-btn:hover,
+.delete-btn:hover {
+    background: #e7e7e7;
+    transition: 0.5s ease;
+}
+
+.edit-btn {
+    color: #1A397C;
+}
+
+.delete-btn {
+    color: #c62828;
 }
 
 .header {
@@ -148,6 +180,8 @@ h6 {
     color: #000000;
     font-size: 20px;
 }
+
+
 
 .main-content {
     display: flex;
@@ -296,6 +330,7 @@ additional-info {
     background-color: transparent;
     border: none;
     cursor: pointer;
+    opacity: 0.5;
 }
 
 .search-results {
@@ -415,6 +450,35 @@ additional-info {
     border-collapse: collapse;
 }
 
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    padding: 6px 12px;
+    background-color: #f5f7fa;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    min-width: 32px;
+
+}
+
+.page-btn:hover {
+    background-color: #dae3ec;
+    transition: background-color 0.2s ease;
+}
+
+.page-btn.active {
+    background-color: var(--button-primary);
+    color: rgb(255, 255, 255);
+}
+
 .actions-cell {
     padding: 0;
     vertical-align: middle;
@@ -440,6 +504,7 @@ additional-info {
     display: inline-block;
     background-image: url('/images/edit.png');
     cursor: pointer;
+    opacity: 0.4;
 }
 
 .icon-delete {
@@ -452,6 +517,7 @@ additional-info {
     display: inline-block;
     background-image: url('/images/delete.png');
     cursor: pointer;
+    opacity: 0.4;
 }
 
 .link-btn {
@@ -710,8 +776,9 @@ input:focus {
     width: 430px;
     padding: 16px 26px;
     color: white;
+    background-color: var(--primary);
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 16px;
     cursor: pointer;
     transition: background-color 0.5s;
@@ -720,8 +787,9 @@ input:focus {
 }
 
 .auth-btn:hover {
-    background: #497b9e;
-    transition: 0.5s;
+    background: #2d54a9;
+    transform: translateY(-1px);
+    transition: 0.2s ease-in-out;
 }
 
 
@@ -877,24 +945,6 @@ input:focus {
     background-color: #aaa;
 }
 
-.add-btn {
-    margin-bottom: 16px;
-    padding: 16px;
-    color: #f9f9f9;
-    border: none;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    width: 185px;
-    transition: background-color 0.5s;
-}
-
-.add-btn:hover {
-    background-color: #497b9e;
-    color: rgb(255, 255, 255);
-}
-
 .modal {
     display: none;
     position: fixed;
@@ -916,6 +966,7 @@ input:focus {
     max-width: 400px;
     position: relative;
     text-align: center;
+    transition: opacity 0.3s, transform 0.3s;
 }
 
 .modal-content h2 {
@@ -939,6 +990,11 @@ input:focus {
     box-sizing: border-box;
 }
 
+
+.important-field {
+    font-weight: bold;
+}
+
 .modal-buttons {
     display: flex;
     justify-content: space-between;
@@ -952,9 +1008,9 @@ input:focus {
     font-size: 15px;
     padding: 15px 25px;
     border-radius: 12px;
-    font-weight: 600;
     cursor: pointer;
     border: none;
+    max-height: 70px;
 }
 
 .cancel-btn {
@@ -988,4 +1044,314 @@ input:focus {
     font-size: 24px;
     color: #999;
     cursor: pointer;
+}
+
+.admin-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    font-family: 'Istok Web', sans-serif;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    font-size: 15px;
+    transition: border-color 0.3s;
+}
+
+.auth-input:focus {
+    border-color: #1A397C;
+    outline: none;
+}
+
+.role-selection {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.role-title {
+    color: #555;
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    padding-left: 30px;
+}
+
+.role-option input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.role-checkmark {
+    position: absolute;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    transition: all 0.3s;
+}
+
+.role-option:hover .role-checkmark {
+    border-color: #1A397C;
+}
+
+.role-option input:checked~.role-checkmark {
+    background-color: #1A397C;
+    border-color: #1A397C;
+}
+
+.role-checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    top: 5.5px;
+    left: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+}
+
+.role-option input:checked~.role-checkmark:after {
+    display: block;
+}
+
+.role-label {
+    color: #333;
+    font-size: 15px;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(26, 57, 124, 0.2);
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px rgba(26, 57, 124, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(26, 57, 124, 0);
+    }
+}
+
+.auth-input:focus,
+.role-option input:focus~.role-checkmark {
+    animation: pulse 1s;
+}
+
+.subdepartments-section {
+    margin: 20px 0;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.section-header h3 {
+    color: #555;
+    font-size: 16px;
+    margin: 0;
+}
+
+.add-subdepartment-btn {
+    background: none;
+    border: none;
+    color: #1A397C;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.add-subdepartment-btn:hover {
+    background-color: #f0f4ff;
+}
+
+.add-subdepartment-btn span {
+    font-size: 18px;
+    margin-right: 5px;
+}
+
+.subdepartments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.subdepartment-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.subdepartment-input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.remove-subdepartment-btn {
+    background: none;
+    border: none;
+    color: #a86a6a;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    padding: 0 5px;
+}
+
+.remove-subdepartment-btn:hover {
+    color: #8f5d5d;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-sizing: border-box;
+    font-size: 15px;
+}
+
+.edit-departments-section {
+    margin-top: 30px;
+    background: rgb(250, 250, 250);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+}
+
+.division-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgb(205, 205, 205)
+}
+
+.division-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 15px;
+    color: #555;
+}
+
+.division-tab.active {
+    border-bottom-color: #1A397C;
+    color: #1A397C;
+    font-weight: 600;
+}
+
+.departments-editor {
+    display: flex;
+    gap: 20px;
+}
+
+.departments-list {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.department-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.department-item.selected {
+    background: #e7f0f6;
+    font-weight: 500;
+    border-radius: 12px;
+}
+
+.department-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 150px;
+}
+
+.subdepartment-list {
+    margin-left: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1A397C;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        bottom: 0;
+    }
+
+    10% {
+        opacity: 1;
+        bottom: 20px;
+    }
+
+    90% {
+        opacity: 1;
+        bottom: 20px;
+    }
+
+    100% {
+        opacity: 0;
+        bottom: 0;
+    }
 }
