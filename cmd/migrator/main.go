@@ -33,13 +33,20 @@ func main() {
 		"file://"+migrationsPath,
 		fmt.Sprintf("%s&x-migrations-table=%s", dsn, migrationsTable),
 	)
+
+	v, d, _ := m.Version()
+	fmt.Printf("Current version: %d, dirty: %v\n", v, d)
+
 	if err != nil {
 		panic(err)
 	}
 
+	fmt.Printf("Current version: %d, dirty: %v\n", v, d)
+
 	var migrationErr error
 	if down {
 		migrationErr = m.Down()
+
 	} else {
 		migrationErr = m.Up()
 	}

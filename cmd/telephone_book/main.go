@@ -11,8 +11,10 @@ import (
 	"telephone-book/internal/http_server/handlers/auth/login"
 	"telephone-book/internal/http_server/handlers/auth/register"
 	"telephone-book/internal/http_server/handlers/departments"
+	"telephone-book/internal/http_server/handlers/utility/birthday"
 	"telephone-book/internal/http_server/handlers/utility/emergency"
 	imports "telephone-book/internal/http_server/handlers/utility/import"
+	"telephone-book/internal/http_server/handlers/utility/search"
 	"telephone-book/internal/http_server/handlers/workers"
 	"telephone-book/internal/http_server/middleware"
 	"telephone-book/internal/lib/logger/sl"
@@ -78,6 +80,17 @@ func main() {
 	router.Route("/emergency", func(r chi.Router) {
 		r.Get("/", emergency.New(ctx, log, storage))
 
+	})
+
+	// Поиск
+	router.Route("/search", func(r chi.Router) {
+		r.Get("/", search.New(ctx, log, storage))
+	})
+
+	//Др сегодня и завтра
+	router.Route("/birthday", func(r chi.Router) {
+		r.Get("/today", birthday.Today(ctx, log, storage))
+		r.Get("/tomorrow", birthday.Tomorrow(ctx, log, storage))
 	})
 
 	//Работники
