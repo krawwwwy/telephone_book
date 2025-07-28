@@ -1,4 +1,4 @@
-package read
+package workers
 
 import (
 	"context"
@@ -61,11 +61,11 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 
 		log.Info("users retrieved successfully", slog.Int("count", len(users)))
 
-		responseOk(w, r, users)
+		getResponseOk(w, r, users)
 	}
 }
 
-func responseOk(w http.ResponseWriter, r *http.Request, users []models.User) {
+func getResponseOk(w http.ResponseWriter, r *http.Request, users []models.User) {
 	render.JSON(w, r, AllUsersResponse{
 		Response: resp.OK(),
 		Users:    users,

@@ -1,4 +1,4 @@
-package create
+package workers
 
 import (
 	"context"
@@ -17,9 +17,9 @@ import (
 	"github.com/go-playground/validator"
 )
 
-const maxPhotoSize = 5 * 1024 * 1024 // 5 MB
+const maxPhotoSizeCreate = 5 * 1024 * 1024 // 5 MB
 
-type Request struct {
+type CreateRequest struct {
 	Institute   string    `json:"institute" validate:"required"`
 	Surname     string    `json:"surname" validate:"required"`
 	Name        string    `json:"name" validate:"required"`
@@ -33,7 +33,7 @@ type Request struct {
 	Description string    `json:"description,omitempty"`
 }
 
-type Response struct {
+type CreateResponse struct {
 	resp.Response
 	UserID int `json:"user_id,omitempty"`
 }
@@ -56,7 +56,7 @@ type UserCreater interface {
 	) (int, error)
 }
 
-func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.HandlerFunc {
+func Create(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.create.New"
 
@@ -71,7 +71,7 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 			return
 		}
 
-		var req Request
+		var req CreateRequest
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
@@ -123,12 +123,12 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.Ha
 
 		log.Info("user successfully saved", slog.String("email", req.Email))
 
-		responseOk(w, r, userID)
+		createResponseOk(w, r, userID)
 	}
 }
 
-func responseOk(w http.ResponseWriter, r *http.Request, userID int) {
-	render.JSON(w, r, Response{
+func createResponseOk(w http.ResponseWriter, r *http.Request, userID int) {
+	render.JSON(w, r, CreateResponse{
 		Response: resp.OK(),
 		UserID:   userID,
 	})

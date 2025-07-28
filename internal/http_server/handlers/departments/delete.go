@@ -1,4 +1,4 @@
-package delete
+package departments
 
 import (
 	"context"
@@ -7,36 +7,35 @@ import (
 	"telephone-book/internal/http_server/middleware"
 	"telephone-book/internal/lib/logger/sl"
 	resp "telephone-book/internal/lib/response"
-	"telephone-book/internal/storage"
 
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
 
-type Response struct {
+type DeleteResponse struct {
 	resp.Response
 }
 
-type UserDeleter interface {
-	DeleteUser(
+type DepartmentDeleter interface {
+	DeleteDepartment(
 		ctx context.Context,
 		institute string,
-		email string,
+		name string,
 	) error
 }
 
-func New(ctx context.Context, log *slog.Logger, userDeleter UserDeleter) http.HandlerFunc {
+func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentDeleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.workers.delete.New"
+		const op = "handlers.deparments.delete.Delete"
 
 		log = log.With(
 			slog.String("operation", op),
 			slog.String("request_id", chimw.GetReqID(r.Context())),
 		)
 
-		email := r.URL.Query().Get("email")
-		if email == "" {
-			msg := "email not specified"
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			msg := "name not specified"
 			log.Error(msg)
 			render.JSON(w, r, resp.Error(msg))
 			return
@@ -52,19 +51,12 @@ func New(ctx context.Context, log *slog.Logger, userDeleter UserDeleter) http.Ha
 
 		role := middleware.GetRole(r.Context(), log)
 		if role != middleware.RoleAdmin {
-			render.JSON(w, r, resp.Error("unauthorized: only admin can delete users"))
+			render.JSON(w, r, resp.Error("unauthorized: only admin can delete departments"))
 			return
 		}
 
-		err := userDeleter.DeleteUser(ctx, institute, email)
+		err := departmentDeleter.DeleteDepartment(ctx, institute, name)
 		if err != nil {
-			if err == storage.ErrUserNotFound {
-				msg := "user not found"
-				log.Info(msg, slog.String("email", email))
-				render.JSON(w, r, resp.Error(msg))
-				return
-			}
-
 			msg := "failed to delete user"
 			log.Error(msg, sl.Err(err))
 			render.JSON(w, r, resp.Error(msg))
@@ -72,10 +64,10 @@ func New(ctx context.Context, log *slog.Logger, userDeleter UserDeleter) http.Ha
 		}
 
 		log.Info("user successfully deleted",
-			slog.String("email", email),
+			slog.String("department", name),
 			slog.String("institute", institute))
 
-		render.JSON(w, r, Response{
+		render.JSON(w, r, DeleteResponse{
 			Response: resp.OK(),
 		})
 	}

@@ -1,4 +1,4 @@
-package read
+package workers
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type Response struct {
+type GetResponse struct {
 	resp.Response
 	User models.User `json:"user"`
 }
@@ -66,7 +66,7 @@ func GetByEmail(ctx context.Context, log *slog.Logger, userGetter UserGetter) ht
 
 		log.Info("user retrieved successfully", slog.String("email", email))
 
-		render.JSON(w, r, Response{
+		render.JSON(w, r, GetResponse{
 			Response: resp.OK(),
 			User:     user,
 		})

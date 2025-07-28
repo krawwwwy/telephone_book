@@ -1,4 +1,4 @@
-package update
+package workers
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 const maxPhotoSize = 5 * 1024 * 1024 // 5 MB
 
-type Request struct {
+type UpdateRequest struct {
 	Institute   string    `json:"institute" validate:"required"`
 	Surname     string    `json:"surname" validate:"required"`
 	Name        string    `json:"name" validate:"required"`
@@ -35,7 +35,7 @@ type Request struct {
 	Photo       []byte    `json:"photo,omitempty"`
 }
 
-type Response struct {
+type UpdateResponse struct {
 	resp.Response
 }
 
@@ -59,7 +59,7 @@ type UserUpdater interface {
 	GetUserByEmail(ctx context.Context, institute string, email string) (models.User, error)
 }
 
-func New(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.HandlerFunc {
+func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.update.New"
 
@@ -90,7 +90,7 @@ func New(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.Ha
 			return
 		}
 
-		var req Request
+		var req UpdateRequest
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
@@ -202,7 +202,7 @@ func New(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.Ha
 }
 
 func responseOk(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, r, Response{
+	render.JSON(w, r, UpdateResponse{
 		Response: resp.OK(),
 	})
 }
