@@ -166,7 +166,7 @@
                         const subLi = document.createElement('li');
                         subLi.textContent = sub;
                         subLi.onclick = () => {
-                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&section=${encodeURIComponent(sub)}`;
+                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
                         };
                         subList.appendChild(subLi);
                     });
