@@ -17,7 +17,11 @@
         <div class="header-center">
             <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
+
         <div class="header-right">
+            <a href="admin.html" class="btn-primary">
+                Админ-панель
+            </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
@@ -162,7 +166,7 @@
                         const subLi = document.createElement('li');
                         subLi.textContent = sub;
                         subLi.onclick = () => {
-                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
+                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&section=${encodeURIComponent(sub)}`;
                         };
                         subList.appendChild(subLi);
                     });
@@ -202,12 +206,6 @@
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
 
-
-        window.onload = () => {
-            switchDivision('giredmet');
-        };
-
-
         function openAddDepartmentModal() {
             document.getElementById("addDepartmentModal").style.display = "flex";
         }
@@ -216,34 +214,19 @@
             document.getElementById("addDepartmentModal").style.display = "none";
         }
 
+
+        window.onload = () => {
+            switchDivision('giredmet');
+        };
+
         window.onclick = function (event) {
             if (event.target === document.getElementById("addDepartmentModal")) {
                 closeAddDepartmentModal();
             }
-
         };
+
     </script>
 
-
-
-    <div id="addContactModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddContactModal()">&times;</span>
-            <h2>Добавление контакта</h2>
-            <p class="modal-subtitle">Заполните поля</p>
-            <form id="contactForm">
-                <input type="text" placeholder="ФИО контакта" required>
-                <input type="text" placeholder="Отдел" required>
-                <input type="email" placeholder="Почта" required>
-                <input type="tel" placeholder="Рабочий телефон" required>
-                <input type="text" placeholder="Описание (опционально)">
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddContactModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
     <div id="addDepartmentModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
@@ -254,24 +237,6 @@
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div id="importModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeImportModal()">&times;</span>
-            <h2>Импорт контактов</h2>
-            <p class="modal-subtitle">Загрузите файл с контактами</p>
-            <form id="uploadForm" enctype="multipart/form-data" method="post">
-                <div class="file-upload-wrapper">
-                    <label for="fileInput" class="file-upload-label">Выбрать файл</label>
-                    <span id="fileName" class="file-name">Файл не выбран</span>
-                    <input type="file" name="file" id="fileInput" required>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Импортировать</button>
                 </div>
             </form>
         </div>
