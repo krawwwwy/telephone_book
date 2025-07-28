@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Админ-панель</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Istok+Web:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-left">
+            <img src="images/logo.jpg" alt="Росатом" class="logo">
+            <span class="company-name">РОСАТОМ</span>
+        </div>
+        <div class="header-center">
+            <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
+        </div>
+        <div class="header-right">
+            <a href="admin.html" class="btn-primary">
+                Админ-панель
+            </a>
+            <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <button class="btn-secondary" onclick="window.history.back()">Вернуться</button>
+        <h1>Панель Администратора</h1>
+        <div class="admin-buttons">
+            <button class="add-btn" onclick="openModal('addUserModal')">Создать пользователя</button>
+            <button class="add-btn" onclick="openModal('addDepartmentModal')">Добавить отдел</button>
+        </div>
+
+        <div class="edit-departments-section">
+            <h2>Редактирование отделов</h2>
+            <div class="division-tabs">
+                <button class="division-tab active" data-division="giredmet">Гиредмет</button>
+                <button class="division-tab" data-division="graphite">Графит</button>
+            </div>
+
+            <div class="departments-editor">
+                <div class="departments-list" id="departmentsList"></div>
+                <div class="department-actions">
+                    <button class="edit-btn" id="editDeptBtn">Редактировать</button>
+                    <button class="delete-btn" id="deleteDeptBtn">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
+    </footer>
+
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавление пользователя</h2>
+            <p class="modal-subtitle">Введите учетные данные</p>
+
+            <input type="text" placeholder="Логин" class="auth-input">
+            <input type="password" placeholder="Пароль" class="auth-input" autocomplete="new-password">
+
+            <div class="role-selection">
+                <p class="role-title">Выберите роль:</p>
+                <div class="role-options">
+                    <label class="role-option">
+                        <input type="radio" name="userRole" value="user" checked>
+                        <span class="role-checkmark"></span>
+                        <span class="role-label">Пользователь</span>
+                    </label>
+
+                    <label class="role-option">
+                        <input type="radio" name="userRole" value="admin">
+                        <span class="role-checkmark"></span>
+                        <span class="role-label">Администратор</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" onclick="closeModal('addUserModal')">Отмена</button>
+                <button type="submit" class="submit-btn" onclick="submitUser()">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addDepartmentModal" class="modal">
+        <div class="modal-content">
+            <h2>Добавление отдела</h2>
+            <p class="modal-subtitle">Заполните поля</p>
+            <div class="form-group">
+                <input type="text" placeholder="Название отдела*" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <input type="text" placeholder="Институт*" class="form-input" required>
+            </div>
+
+            <div class="subdepartments-section">
+                <div class="section-header">
+                    <h3>Подотделы (необязательно)</h3>
+                    <button type="button" class="add-subdepartment-btn" onclick="addSubdepartmentField()">
+                        <span>+</span> Добавить подотдел
+                    </button>
+                </div>
+
+                <div class="subdepartments-list" id="subdepartmentsList">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" onclick="closeModal('addDepartmentModal')">Отмена</button>
+                <button type="submit" class="submit-btn" onclick="submitDepartment()">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editDepartmentModal" class="modal">
+        <div class="modal-content">
+            <h2>Редактирование отдела</h2>
+
+            <div class="form-group">
+                <label>Название отдела:</label>
+                <input type="text" id="editDeptName" class="form-input">
+            </div>
+
+            <div class="subdepartments-section">
+                <div class="section-header">
+                    <h3>Подотделы</h3>
+                    <button type="button" class="add-subdepartment-btn" onclick="addSubdepartmentField(true)">
+                        <span>+</span> Добавить подотдел
+                    </button>
+                </div>
+
+                <div class="subdepartments-list" id="editSubdepartmentsList"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" onclick="closeModal('editDepartmentModal')">Отмена</button>
+                <button type="submit" class="submit-btn" onclick="saveDepartmentChanges()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteDepartmentModal" class="modal">
+        <div class="modal-content">
+            <h2>Удаление отдела</h2>
+            <p id="deleteDeptConfirmText">Вы уверены, что хотите удалить отдел "<span id="deptNameToDelete"></span>"?
+            </p>
+            <div class="modal-footer">
+                <button type="button" class="cancel-btn" onclick="closeModal('deleteDepartmentModal')">Отмена</button>
+                <button type="submit" class="submit-btn" onclick="confirmDepartmentDeletion()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const departments = {
+            giredmet: {
+                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
+                "Коммуникации": ["Внутренние связи", "Внешние связи"],
+                "Коммерческий": [],
+                "Бухгалтерия": []
+            },
+            graphite: {
+                "Проектный": ["Подготовка", "Реализация"],
+                "Логистика": [],
+                "Финансовый контроль": ["Аудит", "Бюджетирование"],
+                "Отдел кадров": ["Подбор", "HR-аналитика"]
+            }
+        };
+
+        let currentDivision = 'giredmet';
+        let selectedDepartment = null;
+        const elements = {
+            departmentsList: document.getElementById('departmentsList'),
+            editDeptBtn: document.getElementById('editDeptBtn'),
+            deleteDeptBtn: document.getElementById('deleteDeptBtn'),
+            divisionTabs: document.querySelectorAll('.division-tab')
+        };
+
+        function init() {
+            loadDepartments(currentDivision);
+            setupEventListeners();
+        }
+
+        function loadDepartments(division) {
+            currentDivision = division;
+            selectedDepartment = null;
+            elements.departmentsList.innerHTML = '';
+
+            elements.divisionTabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.division === division);
+            });
+
+            Object.entries(departments[division]).forEach(([dept, subdepts]) => {
+                const deptElement = document.createElement('div');
+                deptElement.className = 'department-item';
+                deptElement.textContent = dept;
+                deptElement.dataset.dept = dept;
+
+                if (subdepts.length > 0) {
+                    const subCount = document.createElement('span');
+                    subCount.className = 'subdepartment-count';
+                    subCount.textContent = ` (${subdepts.length})`;
+                    deptElement.appendChild(subCount);
+                }
+
+                elements.departmentsList.appendChild(deptElement);
+            });
+        }
+
+        function setupEventListeners() {
+            elements.departmentsList.addEventListener('click', (e) => {
+                const deptElement = e.target.closest('.department-item');
+                if (!deptElement) return;
+
+                selectedDepartment = deptElement.dataset.dept;
+                document.querySelectorAll('.department-item').forEach(item => {
+                    item.classList.toggle('selected', item === deptElement);
+                });
+            });
+
+            elements.divisionTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    loadDepartments(tab.dataset.division);
+                });
+            });
+
+            elements.editDeptBtn.addEventListener('click', editSelectedDepartment);
+            elements.deleteDeptBtn.addEventListener('click', deleteSelectedDepartment);
+        }
+
+        function editSelectedDepartment() {
+            if (!selectedDepartment) {
+                alert('Выберите отдел для редактирования');
+                return;
+            }
+
+            const modal = document.getElementById('editDepartmentModal');
+            document.getElementById('editDeptName').value = selectedDepartment;
+
+            const subList = document.getElementById('editSubdepartmentsList');
+            subList.innerHTML = '';
+
+            departments[currentDivision][selectedDepartment].forEach(subDept => {
+                addSubdepartmentField(true, subDept);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function deleteSelectedDepartment() {
+            if (!selectedDepartment) {
+                alert('Выберите отдел для удаления');
+                return;
+            }
+
+            document.getElementById('deptNameToDelete').textContent = selectedDepartment;
+            openModal('deleteDepartmentModal');
+        }
+
+        function confirmDepartmentDeletion() {
+            delete departments[currentDivision][selectedDepartment];
+            loadDepartments(currentDivision);
+            closeModal('deleteDepartmentModal');
+            showNotification(`Отдел "${selectedDepartment}" успешно удален`);
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'none';
+
+            const inputs = modal.querySelectorAll('input');
+            inputs.forEach(input => {
+                if (input.type !== 'radio' && input.type !== 'checkbox') {
+                    input.value = '';
+                } else {
+                    input.checked = false;
+                }
+            });
+
+            const defaultRadio = modal.querySelector('input[type="radio"][value="user"]');
+            if (defaultRadio) {
+                defaultRadio.checked = true;
+            }
+        }
+
+        function submitUser() {
+            alert('Пользователь создан. (Заглушка, подключим API позже)');
+            closeModal('addUserModal');
+        }
+
+        function submitDepartment() {
+            alert('Отдел добавлен. (Заглушка, подключим API позже)');
+            closeModal('addDepartmentModal');
+        }
+
+        function addSubdepartmentField(subdepartmentName = '') {
+            const subdepartmentsList = document.getElementById('subdepartmentsList');
+
+            const subdepartmentId = Date.now();
+
+            const subdepartmentItem = document.createElement('div');
+            subdepartmentItem.className = 'subdepartment-item';
+            subdepartmentItem.dataset.id = subdepartmentId;
+
+            subdepartmentItem.innerHTML = `
+        <input 
+            type="text" 
+            placeholder="Название подотдела" 
+            class="subdepartment-input"
+            value="${subdepartmentName}"
+            data-id="${subdepartmentId}"
+        >
+        <button 
+            type="button" 
+            class="remove-subdepartment-btn"
+            onclick="removeSubdepartmentField('${subdepartmentId}')"
+        >×</button>
+    `;
+
+            subdepartmentsList.appendChild(subdepartmentItem);
+        }
+
+        function removeSubdepartmentField(id) {
+            const element = document.querySelector(`.subdepartment-item[data-id="${id}"]`);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        function submitDepartment() {
+            const departmentName = document.querySelector('#addDepartmentModal .form-input[placeholder="Название отдела*"]').value;
+            const branch = document.querySelector('#addDepartmentModal .form-input[placeholder="Филиал / Институт*"]').value;
+
+            const subdepartments = [];
+            document.querySelectorAll('.subdepartment-input').forEach(input => {
+                if (input.value.trim() !== '') {
+                    subdepartments.push(input.value.trim());
+                }
+            });
+
+            console.log('Создание отдела:', {
+                departmentName,
+                branch,
+                subdepartments
+            });
+
+            alert(`Отдел "${departmentName}" создан. Подотделы: ${subdepartments.join(', ') || 'нет'}`);
+            closeModal('addDepartmentModal');
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = 'none';
+
+            modal.querySelectorAll('.form-input').forEach(input => {
+                input.value = '';
+            });
+
+            const subdepartmentsList = document.getElementById('subdepartmentsList');
+            if (subdepartmentsList) {
+                subdepartmentsList.innerHTML = '';
+            }
+        }
+
+        function addSubdepartmentField(isForEditor = false, subName = '') {
+            const listId = isForEditor ? 'editSubdepartmentsList' : 'subdepartmentsList';
+            const subdepartmentsList = document.getElementById(listId);
+
+            const subdepartmentId = Date.now();
+
+            const subdepartmentItem = document.createElement('div');
+            subdepartmentItem.className = 'subdepartment-item';
+            subdepartmentItem.dataset.id = subdepartmentId;
+
+            subdepartmentItem.innerHTML = `
+        <input 
+            type="text" 
+            placeholder="Название подотдела" 
+            class="subdepartment-input"
+            value="${subName}"
+            data-id="${subdepartmentId}"
+        >
+        <button 
+            type="button" 
+            class="remove-subdepartment-btn"
+            onclick="removeSubdepartmentField('${subdepartmentId}', ${isForEditor})"
+        >×</button>`;
+
+            subdepartmentsList.appendChild(subdepartmentItem);
+        }
+
+        function removeSubdepartmentField(id, isForEditor = false) {
+            const element = document.querySelector(`.subdepartment-item[data-id="${id}"]`);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
