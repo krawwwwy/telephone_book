@@ -56,23 +56,35 @@
                         </tbody>
                     </table>
                 </div>
-
-                <h2 class="header-text">Дни рождения</h2>
-                <div class="birthday-section">
-                    <div class="birthday-today">
-                        <h3>Сегодня</h3>
-                        <div id="birthday-today" class="birthday-list">
-                            <!-- Дни рождения сегодня -->
-                        </div>
-                    </div>
-                    <div class="birthday-tomorrow">
-                        <h3>Завтра</h3>
-                        <div id="birthday-tomorrow" class="birthday-list">
-                            <!-- Дни рождения завтра -->
-                        </div>
+        </section>
+        
+        <aside class="right-sidebar">
+            <div class="birthday-panel">
+                <h3>🎉 Поздравляем с Днем рождения!</h3>
+                <div class="birthday-photo-container">
+                    <img src="images/person.jpg" alt="Фото сотрудника" class="birthday-photo" id="birthdayPhoto">
+                </div>
+                <div class="birthday-info">
+                    <div class="birthday-name" id="birthdayName">Иванов Иван Иванович</div>
+                </div>
+            </div>
+            
+            <div class="birthday-section">
+                <h3>Дни рождения</h3>
+                <div class="birthday-today">
+                    <h4>Сегодня</h4>
+                    <div id="birthday-today" class="birthday-list">
+                        <!-- Дни рождения сегодня -->
                     </div>
                 </div>
-        </section>
+                <div class="birthday-tomorrow">
+                    <h4>Завтра</h4>
+                    <div id="birthday-tomorrow" class="birthday-list">
+                        <!-- Дни рождения завтра -->
+                    </div>
+                </div>
+            </div>
+        </aside>
     </main>
 
     <script>
@@ -115,25 +127,45 @@
         // Загрузка дней рождения
         async function loadBirthdays() {
             try {
+                // Используем giredmet как дефолтный институт, или определяем из переменной
+                const currentInstitute = 'giredmet'; // можно сделать динамическим
+                
                 // Загрузка дней рождения сегодня
-                const todayResponse = await fetch(`${API_BASE}/birthday/today`);
+                const todayResponse = await fetch(`${API_BASE}/birthday/today?institute=${currentInstitute}`);
                 const todayData = await todayResponse.json();
                 
                 if (todayData.status === 'Ok' && todayData.users) {
                     const todayDiv = document.getElementById('birthday-today');
                     todayDiv.innerHTML = '';
                     
+                    // Если есть именинники сегодня, показываем первого в главной панели
+                    if (todayData.users.length > 0) {
+                        const mainUser = todayData.users[0];
+                        const mainUserName = `${mainUser.surname} ${mainUser.name} ${mainUser.middle_name || ''}`.trim();
+                        document.getElementById('birthdayName').textContent = mainUserName;
+                        // Можно добавить загрузку фото если есть API
+                    }
+                    
+                    // Отображаем всех именинников в списке
                     todayData.users.forEach(user => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${fullName} - ${user.department}`;
+                        userDiv.innerHTML = `${fullName}`;
                         todayDiv.appendChild(userDiv);
                     });
+                    
+                    // Если именинников сегодня нет, скрываем панель поздравления
+                    const birthdayPanel = document.querySelector('.birthday-panel');
+                    if (todayData.users.length === 0) {
+                        birthdayPanel.style.display = 'none';
+                    } else {
+                        birthdayPanel.style.display = 'block';
+                    }
                 }
 
                 // Загрузка дней рождения завтра
-                const tomorrowResponse = await fetch(`${API_BASE}/birthday/tomorrow`);
+                const tomorrowResponse = await fetch(`${API_BASE}/birthday/tomorrow?institute=${currentInstitute}`);
                 const tomorrowData = await tomorrowResponse.json();
                 
                 if (tomorrowData.status === 'Ok' && tomorrowData.users) {
@@ -144,7 +176,7 @@
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${fullName} - ${user.department}`;
+                        userDiv.innerHTML = `${fullName}`;
                         tomorrowDiv.appendChild(userDiv);
                     });
                 }
@@ -184,7 +216,7 @@
         function renderDepartments(departments, institute) {
             const list = document.getElementById('department-list');
             list.innerHTML = '';
-            
+
             departments.forEach(dept => {
                 const li = document.createElement('li');
                 li.className = 'department-item';
@@ -206,9 +238,9 @@
                 li.querySelector('.department-name').appendChild(arrow);
                 
                 // Создаем пустой список секций
-                const subList = document.createElement('ul');
-                subList.classList.add('subdepartment-list');
-                subList.style.display = 'none';
+                    const subList = document.createElement('ul');
+                    subList.classList.add('subdepartment-list');
+                    subList.style.display = 'none';
                 li.appendChild(subList);
                 
                 // Обработчик для раскрытия/скрытия подотделов (только на стрелку)

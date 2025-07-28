@@ -199,7 +199,7 @@
             if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch(`${API_BASE}/workers?institute=${institute}&email=${encodeURIComponent(email)}`, {
                     method: 'DELETE',
