@@ -47,7 +47,7 @@ func (s *Storage) SetSchema(ctx context.Context, institute string) error {
 	return err
 }
 
-func (s *Storage) Search(ctx context.Context, institute string, department string, info string) ([]models.User, error) {
+func (s *Storage) Search(ctx context.Context, institute string, department string, section string, info string) ([]models.User, error) {
 	const op = "storage.postgresql.Search"
 
 	if err := s.SetSchema(ctx, institute); err != nil {
@@ -66,13 +66,23 @@ func (s *Storage) Search(ctx context.Context, institute string, department strin
 			WHERE surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1
 			ORDER BY surname, name`
 	} else {
-		// Если отдел указан, фильтруем по нему
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
-			FROM workers
-			WHERE department = $2 AND
-			(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
-			ORDER BY surname, name`
-		args = append(args, department)
+		if section == "" {
+			// Если отдел указан, фильтруем по нему
+			query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+				FROM workers
+				WHERE department = $2 AND
+				(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
+				ORDER BY surname, name`
+			args = append(args, department)
+		} else {
+			// Если отдел и секция указаны, фильтруем по ним
+			query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+				FROM workers
+				WHERE department = $2 AND section = $3 AND
+				(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
+				ORDER BY surname, name`
+			args = append(args, department, section)
+		}
 	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -121,6 +131,7 @@ func (s *Storage) CreateUserTx(
 	cabinet string,
 	position string,
 	department string,
+	section string,
 	birthDate time.Time,
 	description string,
 	photo []byte,
@@ -155,6 +166,7 @@ func (s *Storage) CreateUserTx(
 		cabinet,
 		position,
 		department,
+		section,
 		birthDate,
 		description,
 		photo,
@@ -200,9 +212,10 @@ func (s *Storage) ImportUsers(ctx context.Context, institute string, users []mod
 			user.Cabinet,
 			user.Position,
 			user.Department,
+			user.Section,
 			user.BirthDate,
 			user.Description,
-			user.Photo,
+			nil,
 		)
 		if err != nil {
 			return fmt.Errorf("%s: failed to create user %s: %w", op, user.Email, err)

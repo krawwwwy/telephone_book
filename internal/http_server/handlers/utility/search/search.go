@@ -14,7 +14,7 @@ import (
 )
 
 type UsersSearcher interface {
-	Search(ctx context.Context, institute string, department string, query string) ([]models.User, error)
+	Search(ctx context.Context, institute string, department string, section string, query string) ([]models.User, error)
 }
 
 type AllUsersResponse struct {
@@ -39,7 +39,9 @@ func New(ctx context.Context, log *slog.Logger, usersSearcher UsersSearcher) htt
 			return
 		}
 
-		department := r.URL.Query().Get("department") // может быть пустым (тогда ищем по всему институту)
+		department := r.URL.Query().Get("department")
+		section := r.URL.Query().Get("section") // может быть пустым (тогда ищем по всему институту)
+
 		query := r.URL.Query().Get("query")
 		if query == "" {
 			msg := "query not specified"
@@ -54,7 +56,7 @@ func New(ctx context.Context, log *slog.Logger, usersSearcher UsersSearcher) htt
 			slog.String("query", query),
 		)
 
-		users, err := usersSearcher.Search(ctx, institute, department, query)
+		users, err := usersSearcher.Search(ctx, institute, department, section, query)
 		if err != nil {
 			msg := "failed to search users"
 			log.Error(msg, sl.Err(err))

@@ -30,6 +30,7 @@ type UpdateRequest struct {
 	Cabinet     string    `json:"cabinet" validate:"required"`
 	Position    string    `json:"position" validate:"required"`
 	Department  string    `json:"department" validate:"required"`
+	Section     string    `json:"section,omitempty"`
 	BirthDate   time.Time `json:"birth_date,omitempty"`
 	Description string    `json:"description,omitempty"`
 	Photo       []byte    `json:"photo,omitempty"`
@@ -52,6 +53,7 @@ type UserUpdater interface {
 		cabinet string,
 		position string,
 		department string,
+		section string,
 		birthDate time.Time,
 		description string,
 		photo []byte,
@@ -147,6 +149,9 @@ func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http
 			if user.Department != "" && user.Department != req.Department {
 				forbiddenFields = append(forbiddenFields, "department")
 			}
+			if user.Section != "" && user.Section != req.Section {
+				forbiddenFields = append(forbiddenFields, "section")
+			}
 			if !user.BirthDate.IsZero() && !user.BirthDate.Equal(req.BirthDate) {
 				forbiddenFields = append(forbiddenFields, "birth_date")
 			}
@@ -174,6 +179,7 @@ func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http
 			req.Cabinet,
 			req.Position,
 			req.Department,
+			req.Section,
 			req.BirthDate,
 			req.Description,
 			nil, // Без фотографии

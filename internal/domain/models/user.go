@@ -13,6 +13,7 @@ type User struct {
 	Cabinet     string    `json:"cabinet,omitempty"`
 	Position    string    `json:"position,omitempty"`
 	Department  string    `json:"department"`
+	Section     string    `json:"section,omitempty"`
 	BirthDate   time.Time `json:"birth_date,omitempty"`
 	Description string    `json:"description,omitempty"`
 	Photo       []byte    `json:"photo,omitempty"`

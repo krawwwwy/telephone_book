@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS workers
     cabinet      TEXT,
     position     TEXT,
     department   TEXT NOT NULL,
+    section     TEXT,
     birth_date   DATE,
     description  TEXT,
     photo        BYTEA
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS workers
     cabinet      TEXT,
     position     TEXT,
     department   TEXT NOT NULL,
+    section     TEXT,
     birth_date   DATE,
     description  TEXT,
     photo        BYTEA

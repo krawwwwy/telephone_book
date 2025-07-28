@@ -29,6 +29,7 @@ type CreateRequest struct {
 	Cabinet     string    `json:"cabinet,omitempty"`
 	Position    string    `json:"position,omitempty"`
 	Department  string    `json:"department,omitempty"`
+	Section     string    `json:"section,omitempty"`
 	BirthDate   time.Time `json:"birth_date,omitempty"`
 	Description string    `json:"description,omitempty"`
 }
@@ -50,6 +51,7 @@ type UserCreater interface {
 		cabinet string,
 		position string,
 		department string,
+		section string,
 		birthDate time.Time,
 		description string,
 		photo []byte,
@@ -102,6 +104,7 @@ func Create(ctx context.Context, log *slog.Logger, userCreater UserCreater) http
 			req.Cabinet,
 			req.Position,
 			req.Department,
+			req.Section,
 			req.BirthDate,
 			req.Description,
 			nil, // Без фотографии

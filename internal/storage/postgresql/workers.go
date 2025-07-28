@@ -22,6 +22,7 @@ func (s *Storage) CreateUser(
 	cabinet string,
 	position string,
 	department string,
+	section string,
 	birthDate time.Time,
 	description string,
 	photo []byte,
@@ -38,10 +39,10 @@ func (s *Storage) CreateUser(
 		INSERT INTO workers (
 			surname, name, middle_name,
 			email, phone_number, cabinet,
-			position, department,
+			position, department, section,
 			birth_date, description, photo
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
 		RETURNING id,
 		`
 
@@ -56,6 +57,7 @@ func (s *Storage) CreateUser(
 		cabinet,
 		position,
 		department,
+		section,
 		birthDate,
 		description,
 		photo,
@@ -113,6 +115,7 @@ func (s *Storage) UpdateUser(
 	cabinet string,
 	position string,
 	department string,
+	section string,
 	birthDate time.Time,
 	description string,
 	photo []byte,
@@ -132,10 +135,11 @@ func (s *Storage) UpdateUser(
 			cabinet = $6, 
 			position = $7, 
 			department = $8,
-			birth_date = $9,
-			description = $10,
-			photo = $11
-		WHERE email = $12`
+			section = $9,
+			birth_date = $10,
+			description = $11,
+			photo = $12
+		WHERE email = $13`
 
 	result, err := s.db.ExecContext(
 		ctx,
@@ -148,6 +152,7 @@ func (s *Storage) UpdateUser(
 		cabinet,
 		position,
 		department,
+		section,
 		birthDate,
 		description,
 		photo,
@@ -179,7 +184,7 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		return models.EmptyUser, err
 	}
 
-	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date, description, photo
+	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section, birth_date, description, photo
 		FROM workers WHERE email = $1`
 
 	var user models.User
@@ -194,6 +199,7 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		&user.Cabinet,
 		&user.Position,
 		&user.Department,
+		&user.Section,
 		&user.BirthDate,
 		&user.Description,
 		&user.Photo,
