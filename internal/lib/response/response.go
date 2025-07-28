@@ -7,9 +7,13 @@ import (
 	"github.com/go-playground/validator"
 )
 
+// Response базовая структура ответа
+// @Description Базовый ответ API
 type Response struct {
-	Status string `json:"status"` //Error, Ok
-	Error  string `json:"error,omitempty"`
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
 }
 
 const (

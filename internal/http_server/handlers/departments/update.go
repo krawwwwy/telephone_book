@@ -19,7 +19,10 @@ type UpdateRequest struct {
 }
 
 type UpdateResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
 }
 
 type DepartmentUpdater interface {
@@ -32,6 +35,18 @@ type DepartmentUpdater interface {
 	) error
 }
 
+// Update обновляет отдел
+// @Summary Обновить отдел
+// @Tags departments
+// @Accept json
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param department query string true "Старое название отдела"
+// @Param department body UpdateRequest true "Новые данные отдела"
+// @Success 200 {object} UpdateResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /departments [put]
 func Update(ctx context.Context, log *slog.Logger, departmentUpdater DepartmentUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.departments.update.Update"
@@ -99,6 +114,7 @@ func Update(ctx context.Context, log *slog.Logger, departmentUpdater DepartmentU
 
 func responseOk(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, UpdateResponse{
-		Response: resp.OK(),
+		Status: resp.OK().Status,
+		Error:  "",
 	})
 }

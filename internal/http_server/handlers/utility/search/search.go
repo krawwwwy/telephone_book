@@ -18,10 +18,25 @@ type UsersSearcher interface {
 }
 
 type AllUsersResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Список пользователей
 	Users []models.User `json:"users"`
 }
 
+// New ищет пользователей по параметрам
+// @Summary Поиск пользователей
+// @Tags search
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param department query string false "Отдел"
+// @Param section query string false "Секция"
+// @Param query query string true "Строка поиска"
+// @Success 200 {object} AllUsersResponse
+// @Failure 400 {object} response.Response
+// @Router /search [get]
 func New(ctx context.Context, log *slog.Logger, usersSearcher UsersSearcher) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.search.New"
@@ -72,7 +87,8 @@ func New(ctx context.Context, log *slog.Logger, usersSearcher UsersSearcher) htt
 
 func responseOk(w http.ResponseWriter, r *http.Request, users []models.User) {
 	render.JSON(w, r, AllUsersResponse{
-		Response: resp.OK(),
-		Users:    users,
+		Status: resp.OK().Status,
+		Error:  "",
+		Users:  users,
 	})
 }

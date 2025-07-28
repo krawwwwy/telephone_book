@@ -16,7 +16,11 @@ import (
 )
 
 type GetResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Работник
 	User models.User `json:"user"`
 }
 
@@ -24,6 +28,15 @@ type UserGetter interface {
 	GetUserByEmail(ctx context.Context, institute string, email string) (models.User, error)
 }
 
+// GetByEmail возвращает работника по email
+// @Summary Получить работника по email
+// @Tags workers
+// @Produce json
+// @Param email path string true "Email работника"
+// @Param institute query string true "Институт"
+// @Success 200 {object} GetResponse
+// @Failure 400 {object} response.Response
+// @Router /workers/{email} [get]
 func GetByEmail(ctx context.Context, log *slog.Logger, userGetter UserGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.read.GetByEmail"
@@ -67,8 +80,9 @@ func GetByEmail(ctx context.Context, log *slog.Logger, userGetter UserGetter) ht
 		log.Info("user retrieved successfully", slog.String("email", email))
 
 		render.JSON(w, r, GetResponse{
-			Response: resp.OK(),
-			User:     user,
+			Status: resp.OK().Status,
+			Error:  "",
+			User:   user,
 		})
 	}
 }

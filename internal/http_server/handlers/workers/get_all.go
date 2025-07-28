@@ -14,7 +14,11 @@ import (
 )
 
 type AllUsersResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Список работников
 	Users []models.User `json:"users"`
 }
 
@@ -22,6 +26,15 @@ type AllUsersGetter interface {
 	GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error)
 }
 
+// GetAll возвращает всех работников отдела
+// @Summary Получить всех работников
+// @Tags workers
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param department query string true "Отдел"
+// @Success 200 {object} AllUsersResponse
+// @Failure 400 {object} response.Response
+// @Router /workers/all [post]
 func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.read.GetAll"
@@ -67,7 +80,8 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 
 func getResponseOk(w http.ResponseWriter, r *http.Request, users []models.User) {
 	render.JSON(w, r, AllUsersResponse{
-		Response: resp.OK(),
-		Users:    users,
+		Status: resp.OK().Status,
+		Error:  "",
+		Users:  users,
 	})
 }

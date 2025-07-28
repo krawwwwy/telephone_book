@@ -21,10 +21,23 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	resp.Response
-	UserID int64 `json:"user_id"`
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error  string `json:"error,omitempty"`
+	UserID int64  `json:"user_id"`
 }
 
+// New регистрирует нового пользователя
+// @Summary Регистрация пользователя
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param register body RegisterRequest true "Данные для регистрации"
+// @Success 200 {object} RegisterResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /auth/register [post]
 func New(ctx context.Context, ssoClient *grpc.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.auth.register.New"
@@ -62,7 +75,8 @@ func New(ctx context.Context, ssoClient *grpc.Client, log *slog.Logger) http.Han
 
 func responseOK(w http.ResponseWriter, r *http.Request, ID int64) {
 	render.JSON(w, r, RegisterResponse{
-		Response: resp.OK(),
-		UserID:   ID,
+		Status: resp.OK().Status,
+		Error:  "",
+		UserID: ID,
 	})
 }

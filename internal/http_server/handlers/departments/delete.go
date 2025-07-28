@@ -13,7 +13,10 @@ import (
 )
 
 type DeleteResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
 }
 
 type DepartmentDeleter interface {
@@ -24,6 +27,16 @@ type DepartmentDeleter interface {
 	) error
 }
 
+// Delete удаляет отдел
+// @Summary Удалить отдел
+// @Tags departments
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param department query string true "Название отдела"
+// @Success 200 {object} DeleteResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /departments [delete]
 func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentDeleter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.deparments.delete.Delete"
@@ -68,7 +81,8 @@ func Delete(ctx context.Context, log *slog.Logger, departmentDeleter DepartmentD
 			slog.String("institute", institute))
 
 		render.JSON(w, r, DeleteResponse{
-			Response: resp.OK(),
+			Status: resp.OK().Status,
+			Error:  "",
 		})
 	}
 }

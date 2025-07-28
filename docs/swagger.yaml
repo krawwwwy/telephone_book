@@ -1,0 +1,806 @@
+basePath: /
+definitions:
+  departments.CreateRequest:
+    properties:
+      institute:
+        type: string
+      name:
+        type: string
+      sections:
+        description: Optional, can be used to specify sections within the department
+        items:
+          type: string
+        type: array
+    type: object
+  departments.CreateResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      user_id:
+        description: ID созданного отдела
+        type: integer
+    type: object
+  departments.DeleteResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  departments.DepartmentsResponse:
+    properties:
+      departments:
+        description: Список отделов
+        items:
+          $ref: '#/definitions/models.Department'
+        type: array
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  departments.SectionsResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      sections:
+        description: Список секций
+        items:
+          $ref: '#/definitions/models.Section'
+        type: array
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  departments.UpdateRequest:
+    properties:
+      name:
+        type: string
+      sections:
+        items:
+          type: string
+        type: array
+    type: object
+  departments.UpdateResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  emergency.EmergencyResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      services:
+        description: Список срочных служб
+        items:
+          $ref: '#/definitions/models.Service'
+        type: array
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  login.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  login.LoginResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: |-
+          Response базовая структура ответа
+          Статус ответа: Ok или Error. Пример: "Ok"
+        type: string
+      token:
+        description: 'JWT токен. Пример: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."'
+        type: string
+    type: object
+  models.Department:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.Section:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        description: Optional, can be used to specify parent section
+        type: integer
+    type: object
+  models.Service:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone_number:
+        type: string
+    type: object
+  models.User:
+    properties:
+      birth_date:
+        type: string
+      cabinet:
+        type: string
+      department:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      middle_name:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+      photo:
+        items:
+          type: integer
+        type: array
+      position:
+        type: string
+      section:
+        type: string
+      surname:
+        type: string
+    type: object
+  register.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  register.RegisterResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      user_id:
+        type: integer
+    type: object
+  response.Response:
+    description: Базовый ответ API
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  search.AllUsersResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      users:
+        description: Список пользователей
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  workers.AllUsersResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      users:
+        description: Список работников
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  workers.CreateRequest:
+    properties:
+      birth_date:
+        type: string
+      cabinet:
+        type: string
+      department:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      institute:
+        type: string
+      middle_name:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+      position:
+        type: string
+      section:
+        type: string
+      surname:
+        type: string
+    required:
+    - email
+    - institute
+    - name
+    - phone_number
+    - surname
+    type: object
+  workers.CreateResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      user_id:
+        description: ID созданного работника
+        type: integer
+    type: object
+  workers.DeleteResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+  workers.GetResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/models.User'
+        description: Работник
+    type: object
+  workers.UpdateRequest:
+    properties:
+      birth_date:
+        type: string
+      cabinet:
+        type: string
+      department:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      institute:
+        type: string
+      middle_name:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+      photo:
+        items:
+          type: integer
+        type: array
+      position:
+        type: string
+      section:
+        type: string
+      surname:
+        type: string
+    required:
+    - cabinet
+    - department
+    - email
+    - institute
+    - name
+    - phone_number
+    - position
+    - surname
+    type: object
+  workers.UpdateResponse:
+    properties:
+      error:
+        description: 'Сообщение об ошибке, если есть. Пример: "invalid request"'
+        type: string
+      status:
+        description: 'Статус ответа: Ok или Error. Пример: "Ok"'
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API для телефонного справочника
+  title: Telephone Book API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/login.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/login.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Вход пользователя
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/register.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/register.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /birthday/today:
+    get:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Дни рождения сегодня
+      tags:
+      - birthday
+  /birthday/tomorrow:
+    get:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Дни рождения завтра
+      tags:
+      - birthday
+  /departments:
+    delete:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Название отдела
+        in: query
+        name: department
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/departments.DeleteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Удалить отдел
+      tags:
+      - departments
+    get:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/departments.DepartmentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить все отделы
+      tags:
+      - departments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные отдела
+        in: body
+        name: department
+        required: true
+        schema:
+          $ref: '#/definitions/departments.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/departments.CreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Создать отдел
+      tags:
+      - departments
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Старое название отдела
+        in: query
+        name: department
+        required: true
+        type: string
+      - description: Новые данные отдела
+        in: body
+        name: department
+        required: true
+        schema:
+          $ref: '#/definitions/departments.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/departments.UpdateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Обновить отдел
+      tags:
+      - departments
+  /departments/{department}:
+    get:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Название отдела
+        in: path
+        name: department
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/departments.SectionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить секции отдела
+      tags:
+      - departments
+  /emergency:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/emergency.EmergencyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить срочные службы
+      tags:
+      - emergency
+  /search:
+    get:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Отдел
+        in: query
+        name: department
+        type: string
+      - description: Секция
+        in: query
+        name: section
+        type: string
+      - description: Строка поиска
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/search.AllUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Поиск пользователей
+      tags:
+      - search
+  /workers:
+    delete:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Email работника
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workers.DeleteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Удалить работника
+      tags:
+      - workers
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные работника
+        in: body
+        name: worker
+        required: true
+        schema:
+          $ref: '#/definitions/workers.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workers.CreateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Создать работника
+      tags:
+      - workers
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Email работника
+        in: query
+        name: email
+        required: true
+        type: string
+      - description: Новые данные работника
+        in: body
+        name: worker
+        required: true
+        schema:
+          $ref: '#/definitions/workers.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workers.UpdateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Обновить работника
+      tags:
+      - workers
+  /workers/{email}:
+    get:
+      parameters:
+      - description: Email работника
+        in: path
+        name: email
+        required: true
+        type: string
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workers.GetResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить работника по email
+      tags:
+      - workers
+  /workers/all:
+    post:
+      parameters:
+      - description: Институт
+        in: query
+        name: institute
+        required: true
+        type: string
+      - description: Отдел
+        in: query
+        name: department
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/workers.AllUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить всех работников
+      tags:
+      - workers
+swagger: "2.0"

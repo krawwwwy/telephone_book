@@ -19,6 +19,18 @@ type UserImporter interface {
 	ImportUsers(ctx context.Context, isntitue string, users []models.User) error
 }
 
+// New импортирует пользователей из файла
+// @Summary Импорт пользователей
+// @Tags import
+// @Accept multipart/form-data
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param file formData file true "Файл с пользователями"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /workers/import [post]
+
 func New(ctx context.Context, log *slog.Logger, userCreater UserImporter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.utility.imports.New"

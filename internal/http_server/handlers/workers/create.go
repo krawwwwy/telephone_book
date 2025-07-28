@@ -35,7 +35,11 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// ID созданного работника
 	UserID int `json:"user_id,omitempty"`
 }
 
@@ -58,6 +62,16 @@ type UserCreater interface {
 	) (int, error)
 }
 
+// Create создает нового работника
+// @Summary Создать работника
+// @Tags workers
+// @Accept json
+// @Produce json
+// @Param worker body CreateRequest true "Данные работника"
+// @Success 200 {object} CreateResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /workers [post]
 func Create(ctx context.Context, log *slog.Logger, userCreater UserCreater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.create.New"
@@ -132,7 +146,8 @@ func Create(ctx context.Context, log *slog.Logger, userCreater UserCreater) http
 
 func createResponseOk(w http.ResponseWriter, r *http.Request, userID int) {
 	render.JSON(w, r, CreateResponse{
-		Response: resp.OK(),
-		UserID:   userID,
+		Status: resp.OK().Status,
+		Error:  "",
+		UserID: userID,
 	})
 }

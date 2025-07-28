@@ -15,12 +15,20 @@ import (
 )
 
 type DepartmentsResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Список отделов
 	Departments []models.Department `json:"departments"`
 }
 
 type SectionsResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Список секций
 	Sections []models.Section `json:"sections"`
 }
 
@@ -29,6 +37,14 @@ type DepartmentsGetter interface {
 	GetSections(ctx context.Context, institute string, department string) ([]models.Section, error)
 }
 
+// GetAll возвращает список всех отделов
+// @Summary Получить все отделы
+// @Tags departments
+// @Produce json
+// @Param institute query string true "Институт"
+// @Success 200 {object} DepartmentsResponse
+// @Failure 400 {object} response.Response
+// @Router /departments [get]
 func GetAll(ctx context.Context, log *slog.Logger, departmnetsGetter DepartmentsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.depaerments.read.GetAll"
@@ -64,6 +80,15 @@ func GetAll(ctx context.Context, log *slog.Logger, departmnetsGetter Departments
 	}
 }
 
+// GetSections возвращает список секций отдела
+// @Summary Получить секции отдела
+// @Tags departments
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param department path string true "Название отдела"
+// @Success 200 {object} SectionsResponse
+// @Failure 400 {object} response.Response
+// @Router /departments/{department} [get]
 func GetSections(ctx context.Context, log *slog.Logger, departmnetsGetter DepartmentsGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.departments.read.GetSections"
@@ -109,14 +134,16 @@ func GetSections(ctx context.Context, log *slog.Logger, departmnetsGetter Depart
 }
 func DepartmentsResponseOk(w http.ResponseWriter, r *http.Request, departments []models.Department) {
 	render.JSON(w, r, DepartmentsResponse{
-		Response:    resp.OK(),
+		Status:      resp.OK().Status,
+		Error:       "",
 		Departments: departments,
 	})
 }
 
 func SectionsResponseOk(w http.ResponseWriter, r *http.Request, sections []models.Section) {
 	render.JSON(w, r, SectionsResponse{
-		Response: resp.OK(),
+		Status:   resp.OK().Status,
+		Error:    "",
 		Sections: sections,
 	})
 }

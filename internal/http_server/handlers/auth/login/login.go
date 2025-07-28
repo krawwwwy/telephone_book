@@ -18,13 +18,28 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// LoginResponse ответ на успешный вход
 type LoginResponse struct {
-	resp.Response
+	// Response базовая структура ответа
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// JWT токен. Пример: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 	Token string `json:"token"`
 }
 
 const AppID = 1
 
+// New авторизует пользователя
+// @Summary Вход пользователя
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param login body LoginRequest true "Данные для входа"
+// @Success 200 {object} login.LoginResponse
+// @Failure 400 {object} response.Response
+// @Router /auth/login [post]
 func New(ctx context.Context, ssoClient *grpc.Client, log *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.auth.login.New"
@@ -54,7 +69,8 @@ func New(ctx context.Context, ssoClient *grpc.Client, log *slog.Logger) http.Han
 
 func responseOK(w http.ResponseWriter, r *http.Request, token string) {
 	render.JSON(w, r, LoginResponse{
-		Response: resp.OK(),
-		Token:    token,
+		Status: resp.OK().Status,
+		Error:  "",
+		Token:  token,
 	})
 }

@@ -1,6 +1,13 @@
 package main
 
+// @title Telephone Book API
+// @version 1.0
+// @description API для телефонного справочника
+// @host localhost:8080
+// @BasePath /
+
 import (
+	_ "telephone-book/docs" // swagger docs
 	"context"
 	stdlog "log"
 	"log/slog"
@@ -23,6 +30,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const (
@@ -67,6 +75,9 @@ func main() {
 	router.Use(chimiddleware.URLFormat)
 	router.Use(middleware.CORS)                           // Добавляем CORS middleware
 	router.Use(middleware.AuthMiddleware(ssoClient, log)) // Добавляем Auth middleware
+
+	// Swagger UI
+	router.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	ctx := context.Background()
 

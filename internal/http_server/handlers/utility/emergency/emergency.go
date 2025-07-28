@@ -18,10 +18,21 @@ type EmergencyProvider interface {
 }
 
 type EmergencyResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// Список срочных служб
 	Services []models.Service `json:"services"`
 }
 
+// New возвращает список срочных служб
+// @Summary Получить срочные службы
+// @Tags emergency
+// @Produce json
+// @Success 200 {object} EmergencyResponse
+// @Failure 400 {object} response.Response
+// @Router /emergency [get]
 func New(ctx context.Context, log *slog.Logger, emergencyProvider EmergencyProvider) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.utility.emergency.New"
@@ -46,7 +57,8 @@ func New(ctx context.Context, log *slog.Logger, emergencyProvider EmergencyProvi
 
 func responseOk(w http.ResponseWriter, r *http.Request, services []models.Service) {
 	render.JSON(w, r, EmergencyResponse{
-		Response: resp.OK(),
+		Status:   resp.OK().Status,
+		Error:    "",
 		Services: services,
 	})
 }

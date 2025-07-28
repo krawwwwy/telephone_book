@@ -37,7 +37,10 @@ type UpdateRequest struct {
 }
 
 type UpdateResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
 }
 
 type UserUpdater interface {
@@ -61,6 +64,18 @@ type UserUpdater interface {
 	GetUserByEmail(ctx context.Context, institute string, email string) (models.User, error)
 }
 
+// Update обновляет работника
+// @Summary Обновить работника
+// @Tags workers
+// @Accept json
+// @Produce json
+// @Param institute query string true "Институт"
+// @Param email query string true "Email работника"
+// @Param worker body UpdateRequest true "Новые данные работника"
+// @Success 200 {object} UpdateResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /workers [put]
 func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.workers.update.New"
@@ -209,6 +224,7 @@ func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http
 
 func responseOk(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, UpdateResponse{
-		Response: resp.OK(),
+		Status: resp.OK().Status,
+		Error:  "",
 	})
 }

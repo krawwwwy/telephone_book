@@ -17,6 +17,14 @@ type BirthdayGetter interface {
 	GetTomorrowsBirthdays(ctx context.Context, institute string) ([]models.User, error)
 }
 
+// Today возвращает список пользователей, у которых день рождения сегодня
+// @Summary Дни рождения сегодня
+// @Tags birthday
+// @Produce json
+// @Param institute query string true "Институт"
+// @Success 200 {array} models.User
+// @Failure 400 {object} response.Response
+// @Router /birthday/today [get]
 func Today(ctx context.Context, log *slog.Logger, birthdayGetter BirthdayGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.utility.birthday.New"

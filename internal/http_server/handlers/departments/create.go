@@ -20,7 +20,11 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	resp.Response
+	// Статус ответа: Ok или Error. Пример: "Ok"
+	Status string `json:"status"`
+	// Сообщение об ошибке, если есть. Пример: "invalid request"
+	Error string `json:"error,omitempty"`
+	// ID созданного отдела
 	DepatmentID int `json:"user_id,omitempty"`
 }
 
@@ -33,6 +37,16 @@ type DepatmentCreater interface {
 	) (int, error)
 }
 
+// Create создает новый отдел
+// @Summary Создать отдел
+// @Tags departments
+// @Accept json
+// @Produce json
+// @Param department body CreateRequest true "Данные отдела"
+// @Success 200 {object} CreateResponse
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Router /departments [post]
 func Create(ctx context.Context, log *slog.Logger, departmentCreater DepatmentCreater) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.departments.create.Create"
@@ -81,7 +95,8 @@ func Create(ctx context.Context, log *slog.Logger, departmentCreater DepatmentCr
 
 func createResponseOk(w http.ResponseWriter, r *http.Request, departmentID int) {
 	render.JSON(w, r, CreateResponse{
-		Response:    resp.OK(),
+		Status:      resp.OK().Status,
+		Error:       "",
 		DepatmentID: departmentID,
 	})
 }
