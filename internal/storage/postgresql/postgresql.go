@@ -239,7 +239,6 @@ func (s *Storage) Emergency(ctx context.Context) ([]models.Service, error) {
 		var service models.Service
 
 		err := rows.Scan(
-			&service.ID,
 			&service.Name,
 			&service.PhoneNumber,
 			&service.Email,

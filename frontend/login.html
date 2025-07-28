@@ -24,10 +24,10 @@
 
     <div class="login-container">
         <h2>Войдите в аккаунт телефонного справочника</h2>
-        <form class="login-form">
+        <form class="login-form" id="loginForm">
             <div class="form-group">
-                <label for="username">Логин:</label>
-                <input type="text" id="username" name="username" required>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
             </div>
             <div class="form-group">
                 <label for="password">Пароль:</label>
@@ -48,6 +48,47 @@
     <footer class="footer">
         Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
     </footer>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const email = formData.get('email');
+            const password = formData.get('password');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok' && result.token) {
+                    // Сохраняем токен в localStorage
+                    localStorage.setItem('authToken', result.token);
+                    
+                    alert('Авторизация успешна!');
+                    // Перенаправляем на главную страницу
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Ошибка авторизации: ' + (result.error || 'Неверные данные'));
+                }
+            } catch (error) {
+                console.error('Ошибка при авторизации:', error);
+                alert('Ошибка соединения с сервером');
+            }
+        });
+    </script>
 </body>
 
 </html>

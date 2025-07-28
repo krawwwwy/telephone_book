@@ -133,115 +133,92 @@
     </div>
 
     <script>
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division');
-            const department = params.get('department');
-            const subdepartment = params.get('subdepartment');
-
-            const breadcrumbs = document.getElementById('breadcrumbs');
-            let html = `<a href="index.html">Главная</a>`;
-
-            if (division) {
-                const readableDivision = capitalizeDivision(division);
-                html += ` / <span>${readableDivision}</span>`;
+        const API_BASE = 'http://localhost:8080';
+        
+        // Получаем email из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            if (!email) {
+                alert('Email не указан');
+                window.location.href = 'index.html';
+                return;
             }
-
-            if (department) {
-                html += ` / <span>${department}</span>`;
+            
+            try {
+                // Нужно определить институт для запроса - попробуем оба
+                let userData = null;
+                
+                for (const institute of ['giredmet', 'grafit']) {
+                    try {
+                        const response = await fetch(`${API_BASE}/workers/?email=${encodeURIComponent(email)}&institute=${institute}`);
+                        const data = await response.json();
+                        
+                        if (data.status === 'Ok' && data.user) {
+                            userData = data.user;
+                            break;
+                        }
+                    } catch (err) {
+                        console.log(`Пользователь не найден в ${institute}`);
+                    }
+                }
+                
+                if (userData) {
+                    // Заполняем данные на странице
+                    document.getElementById('fullName').textContent = userData.name || 'Не указано';
+                    document.getElementById('position').textContent = userData.position || 'Не указано';
+                    document.getElementById('department').textContent = userData.department || 'Не указано';
+                    document.getElementById('sub').textContent = userData.section || 'Не указано';
+                    document.getElementById('cab').textContent = userData.cabinet || 'Не указано';
+                    document.getElementById('workPhone').textContent = userData.phone || 'Не указано';
+                    document.getElementById('personalPhone').textContent = userData.personal_phone || 'Не указано';
+                    document.getElementById('email').textContent = userData.email || 'Не указано';
+                    document.getElementById('birthday').textContent = userData.birthday || 'Не указано';
+                    
+                    // Обновляем описание если есть
+                    const descriptionElement = document.querySelector('.profile-description p');
+                    if (descriptionElement && userData.description) {
+                        descriptionElement.textContent = userData.description;
+                    }
+                } else {
+                    alert('Пользователь не найден');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                alert('Ошибка загрузки данных');
             }
-
-            if (subdepartment) {
-                html += ` / <a href="departments.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&subdepartment=${encodeURIComponent(subdepartment)}">${subdepartment}</a>`;
-            }
-
-            html += ` / Профиль контакта`;
-            breadcrumbs.innerHTML = html;
-        };
-
-        function capitalizeDivision(str) {
-            const map = {
-                giredmet: "Гиредмет",
-                graphite: "Графит"
-            };
-            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
+        
+        // Загружаем данные при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+        });
 
         function openEditModal() {
-            document.getElementById('editModal').style.display = 'flex';
-            document.getElementById('editName').value = document.getElementById('fullName').innerText;
-            document.getElementById('editPosition').value = document.getElementById('position').innerText;
-            document.getElementById('editDepartment').value = document.getElementById('department').innerText;
-            document.getElementById('editWorkPhone').value = document.getElementById('workPhone').innerText;
-            document.getElementById('editPersonalPhone').value = document.getElementById('personalPhone').innerText;
-            document.getElementById('editEmail').value = document.getElementById('email').innerText;
-            document.getElementById('editBirthday').value = document.getElementById('birthday').innerText;
+            document.getElementById("editModal").style.display = "flex";
         }
 
         function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
+            document.getElementById("editModal").style.display = "none";
         }
 
-        function openPhotoUpload() {
-            document.getElementById('photoInput').click();
-        }
-
-        function openPhotoDeleteModal() {
-            document.getElementById('deletePhotoModal').style.display = 'flex';
-        }
-
-        function closePhotoDeleteModal() {
-            document.getElementById('deletePhotoModal').style.display = 'none';
-        }
-
-        function confirmPhotoDelete() {
-            document.getElementById('profileImage').src = 'placeholder.jpg';
-            closePhotoDeleteModal();
-        }
-
-        function openDeleteContactModal() {
-            const el = document.getElementById('deleteConfirmText');
-            el.innerText = `Вы уверены, что хотите удалить этот контакт?`;
-            el.classList.add('modal-subtitle');
-            document.getElementById('deleteContactModal').style.display = 'flex';
-        }
-
-        function closeDeleteContactModal() {
-            document.getElementById('deleteContactModal').style.display = 'none';
-        }
-
-        function confirmDeleteContact() {
-            if (contactRowToDelete) {
-                contactRowToDelete.remove();
-                contactRowToDelete = null;
+        function deleteContact() {
+            if (confirm('Вы уверены, что хотите удалить этот контакт?')) {
+                // Реализация удаления контакта
+                alert('Контакт удален');
+                window.location.href = 'index.html';
             }
-            closeDeleteContactModal();
         }
 
-        document.getElementById('photoInput').addEventListener('change', function () {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('profileImage').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+        window.onclick = function (event) {
+            if (event.target === document.getElementById("editModal")) {
+                closeEditModal();
             }
-        });
+        };
 
-
-
-        document.getElementById('editForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            document.getElementById('fullName').innerText = document.getElementById('editName').value;
-            document.getElementById('position').innerText = document.getElementById('editPosition').value;
-            document.getElementById('department').innerText = document.getElementById('editDepartment').value;
-            document.getElementById('workPhone').innerText = document.getElementById('editWorkPhone').value;
-            document.getElementById('personalPhone').innerText = document.getElementById('editPersonalPhone').value;
-            document.getElementById('email').innerText = document.getElementById('editEmail').value;
-            document.getElementById('birthday').innerText = document.getElementById('editBirthday').value;
-            closeEditModal();
-        });
     </script>
 </body>
 

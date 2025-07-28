@@ -51,13 +51,9 @@ func GetAll(ctx context.Context, log *slog.Logger, allUsersGetter AllUsersGetter
 			render.JSON(w, r, resp.Error(msg))
 			return
 		}
+
+		// department может быть пустым - тогда вернем всех сотрудников института
 		department := r.URL.Query().Get("department")
-		if department == "" {
-			msg := "department not specified"
-			log.Error(msg)
-			render.JSON(w, r, resp.Error(msg))
-			return
-		}
 
 		log = log.With(
 			slog.String("institute", institute),

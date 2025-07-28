@@ -29,7 +29,7 @@
         <aside class="sidebar">
             <div class="division-links">
                 <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-                <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
+                <a href="#" id="link-grafit" onclick="switchDivision('grafit')">Графит</a>
             </div>
             <div id="division-button-container" style="margin-bottom: 20px; display: none;">
                 <button class="btn-secondary" id="current-division-btn">Все контакты</button>
@@ -83,68 +83,119 @@
     </footer>
 
     <script>
+        const API_BASE = 'http://localhost:8080';
 
-        const exampleContacts = {
-            giredmet: [
-                { name: "Иванов И.И.", phone: "+7 495 111-11-11", cab: "209", email: "ivanov@giredmet.ru", position: "Инженер", department: "Инженерный", sub: "Разработка" },
-                { name: "Петров П.П.", phone: "+7 495 222-22-22", cab: "211", email: "petrov@giredmet.ru", position: "Бухгалтер", department: "Бухгалтерия", sub: "" }
-            ],
-            graphite: [
-                { name: "Сидоров С.С.", phone: "+7 495 333-33-33", cab: "308", email: "sidorov@graphite.ru", position: "Аналитик", department: "Финансовый контроль", sub: "Бюджетирование" }
-            ]
-        };
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const division = urlParams.get('division') || 'giredmet';
 
-        const departments = {
-            giredmet: {
-                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
-                "Коммуникации": ["Внутренние связи", "Внешние связи"],
-                "Коммерческий": [],
-                "Бухгалтерия": []
-            },
-            graphite: {
-                "Проектный": ["Подготовка", "Реализация"],
-                "Логистика": [],
-                "Финансовый контроль": ["Аудит", "Бюджетирование"],
-                "Отдел кадров": ["Подбор", "HR-аналитика"]
+        // Загрузка всех сотрудников института
+        async function loadAllWorkers() {
+            try {
+                const response = await fetch(`${API_BASE}/workers/all?institute=${encodeURIComponent(division)}&department=`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.users) {
+                    const tbody = document.querySelector('#contactsTableBody');
+                    tbody.innerHTML = '';
+                    
+                    data.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${user.name}</a></td>
+                            <td>${user.phone || ''}</td>
+                            <td>${user.cabinet || ''}</td>
+                            <td>${user.email || ''}</td>
+                            <td>${user.position || ''}</td>
+                            <td>${user.department || ''}</td>
+                            <td>${user.section || ''}</td>
+                            <td class="actions-cell">
+                                <div class="actions-wrapper">
+                                    <span class="icon-edit" title="Редактировать"></span>
+                                    <span class="icon-delete" title="Удалить"></span>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Настраиваем обработчики для кнопок редактирования и удаления
+                    setupActionButtons();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки сотрудников:', error);
             }
-        };
+        }
 
+        // Загрузка отделов для сайдбара
+        async function loadDepartments(institute) {
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.departments) {
+                    const list = document.getElementById('department-list');
+                    list.innerHTML = '';
+
+                    // Загружаем секции для каждого отдела
+                    for (const dept of data.departments) {
+                        try {
+                            const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                            const sectionsData = await sectionsResponse.json();
+                            
+                            if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                                dept.sections = sectionsData.sections;
+                            } else {
+                                dept.sections = [];
+                            }
+                        } catch (err) {
+                            console.log(`Секции для отдела ${dept.name} не найдены`);
+                            dept.sections = [];
+                        }
+                    }
+
+                    data.departments.forEach(dept => {
+                        const li = document.createElement('li');
+                        li.classList.add('department-item');
+                        li.innerHTML = `<span class="department-name">${dept.name}</span>`;
+
+                        if (dept.sections && dept.sections.length > 0) {
+                            const subList = document.createElement('ul');
+                            subList.classList.add('subdepartment-list');
+                            subList.style.display = 'none';
+
+                            dept.sections.forEach(section => {
+                                const subLi = document.createElement('li');
+                                subLi.textContent = section.name;
+                                subLi.onclick = () => {
+                                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
+                                };
+                                subList.appendChild(subLi);
+                            });
+
+                            li.appendChild(subList);
+                            li.querySelector('.department-name').onclick = () => {
+                                subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
+                            };
+                        } else {
+                            li.onclick = () => {
+                                window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
+                            };
+                        }
+
+                        list.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки отделов:', error);
+            }
+        }
 
         function switchDivision(name) {
-            const list = document.getElementById('department-list');
-            list.innerHTML = '';
-
-            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
-                const li = document.createElement('li');
-                li.classList.add('department-item');
-                li.innerHTML = `<span class="department-name">${dept}</span>`;
-
-                if (subdepts.length > 0) {
-                    const subList = document.createElement('ul');
-                    subList.classList.add('subdepartment-list');
-                    subList.style.display = 'none';
-
-                    subdepts.forEach(sub => {
-                        const subLi = document.createElement('li');
-                        subLi.textContent = sub;
-                        subLi.onclick = () => {
-                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&section=${encodeURIComponent(sub)}`;
-                        };
-                        subList.appendChild(subLi);
-                    });
-
-                    li.appendChild(subList);
-                    li.querySelector('.department-name').onclick = () => {
-                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
-                    };
-                } else {
-                    li.onclick = () => {
-                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
-                    };
-                }
-
-                list.appendChild(li);
-            });
+            // Загружаем отделы для выбранного института
+            loadDepartments(name);
 
             const buttonContainer = document.getElementById('division-button-container');
             const divisionButton = document.getElementById('current-division-btn');
@@ -156,101 +207,45 @@
             };
 
             document.getElementById('link-giredmet').classList.remove('active-division');
-            document.getElementById('link-graphite').classList.remove('active-division');
+            document.getElementById('link-grafit').classList.remove('active-division');
             document.getElementById(`link-${name}`).classList.add('active-division');
         }
 
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division');
-            const contacts = exampleContacts[division] || [];
-            const department = params.get('department');
-            const subdepartment = params.get('subdepartment');
+        // Настройка обработчиков для кнопок действий
+        function setupActionButtons() {
+            document.querySelectorAll('.actions-cell').forEach(cell => {
+                const tr = cell.parentElement;
 
-            switchDivision('giredmet');
+                const btnEdit = cell.querySelector('.icon-edit');
+                if (btnEdit) {
+                    btnEdit.addEventListener('click', () => openEditFromTable(tr));
+                }
 
+                const btnDelete = cell.querySelector('.icon-delete');
+                if (btnDelete) {
+                    btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
+                }
+            });
+        }
+
+        // Загрузка breadcrumbs
+        function loadBreadcrumbs() {
             const breadcrumbs = document.getElementById('breadcrumbs');
             if (!breadcrumbs) return;
 
             let html = `<a href="index.html">Главная</a>`;
-
-            if (division) {
-                html += ` / ${capitalize(division)}`;
-            }
-            if (department) {
-                html += ` / ${department}`;
-            }
-
-            if (subdepartment) {
-                html += ` / ${subdepartment}`;
-            }
-
+            html += ` / ${capitalize(division)}`;
             breadcrumbs.innerHTML = html;
-            document.querySelectorAll('.fio-link').forEach(link => {
-                const name = link.textContent.trim();
-                let url = `contact.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&name=${encodeURIComponent(name)}`;
-                if (subdepartment) {
-                    url += `&section=${encodeURIComponent(subdepartment)}`;
-                }
-                link.href = url;
-            });
-
-            document.querySelectorAll('.actions-cell').forEach(cell => {
-                const tr = cell.parentElement;
-                const fio = tr.querySelector('.fio-link').textContent.trim();
-
-                const btnEdit = cell.querySelector('.icon-edit');
-                btnEdit.addEventListener('click', () => openEditFromTable(tr));
-
-                const btnDelete = cell.querySelector('.icon-delete');
-                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
-            });
-
-            document.getElementById('divisionTitle').innerText = `Контакты института "${capitalize(division)}"`;
-
-            const tbody = document.getElementById('contactsTableBody');
-            contacts.forEach(contact => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><a href="contact.html" class="fio-link">${contact.name}</a></td>
-                    <td>${contact.phone || '-'}</td>
-                    <td>${contact.cab || '-'}</td>
-                    <td>${contact.email || '-'}</td>
-                    <td>${contact.position || '-'}</td>
-                    <td>${contact.department || '-'}</td>
-                    <td>${contact.sub || '-'}</td>
-                    <td class="actions-cell">
-                    <div class="actions-wrapper">
-                        <span class="icon-edit" title="Редактировать"></span>
-                        <span class="icon-delete" title="Удалить"></span>
-                    </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            document.querySelectorAll('.actions-cell').forEach(cell => {
-                const tr = cell.parentElement;
-
-                const btnEdit = cell.querySelector('.icon-edit');
-                btnEdit.addEventListener('click', () => openEditFromTable(tr));
-
-                const btnDelete = cell.querySelector('.icon-delete');
-                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
-            });
-
-            paginateTable();
-        };
+        }
 
         function capitalize(str) {
             if (!str) return '';
             const map = {
                 giredmet: "Гиредмет",
-                graphite: "Графит"
+                grafit: "Графит"
             };
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
-
 
         function openAddContactModal() {
             document.getElementById("addContactModal").style.display = "flex";
@@ -272,7 +267,8 @@
             const input = document.querySelector('.search-bar');
             const value = input.value.trim();
             if (value) {
-                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
+                // Поиск уже реализован через input event listener
+                console.log(`Поиск: ${value}`);
             }
         }
 
@@ -330,17 +326,108 @@
             document.getElementById("addDepartmentModal").style.display = "none";
         }
 
+        // Обработка формы добавления контакта
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const inputs = e.target.querySelectorAll('input');
+            
+            const workerData = {
+                name: inputs[0].value,
+                department: inputs[1].value,
+                email: inputs[2].value,
+                phone: inputs[3].value,
+                description: inputs[4].value,
+                institute: division,
+                cabinet: '',
+                birthday: new Date().toISOString().split('T')[0]
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(workerData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Контакт успешно добавлен');
+                    closeAddContactModal();
+                    loadAllWorkers();
+                    e.target.reset();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при добавлении контакта:', error);
+                alert('Ошибка при добавлении контакта');
+            }
+        });
 
+        // Обработка формы добавления отдела
+        document.getElementById('departmentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const departmentName = formData.get('name') || e.target.querySelector('input[type="text"]').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/departments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({
+                        name: departmentName,
+                        institute: division
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно добавлен');
+                    closeAddDepartmentModal();
+                    loadDepartments(division); // Перезагружаем отделы
+                    e.target.reset();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при добавлении отдела:', error);
+                alert('Ошибка при добавлении отдела');
+            }
+        });
+
+        // Обработка импорта файла
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
+            formData.append('institute', division);
+            
             try {
-                const response = await fetch('/api/import-users', {
+                const response = await fetch(`${API_BASE}/workers/import`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
                     body: formData
                 });
                 const result = await response.json();
-                alert(result.status || 'Импорт завершён');
+                
+                if (result.status === 'Ok') {
+                    alert('Импорт завершён успешно');
+                    loadAllWorkers();
+                } else {
+                    alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                }
             } catch (err) {
                 alert('Ошибка при импорте файла');
                 console.error(err);
@@ -366,30 +453,62 @@
             }
         };
 
+        // Поиск
         document.getElementById('search').addEventListener('input', function () {
             const query = this.value;
-            if (query.length < 2) return;
+            if (query.length < 2) {
+                loadAllWorkers();
+                return;
+            }
 
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division') || 'giredmet';
-            const department = params.get('department') || '';
-
-            fetch(`/search?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&query=${encodeURIComponent(query)}`)
+            fetch(`${API_BASE}/search?institute=${encodeURIComponent(division)}&department=&query=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
-                    const resultsDiv = document.getElementById('results');
-                    resultsDiv.innerHTML = '';
-                    data.users.forEach(user => {
-                        const div = document.createElement('div');
-                        div.classList.add('search-result-row');
-                        div.innerHTML = `<strong>${user.name}</strong> (${user.email}) – каб. ${user.cabinet}`;
-                        resultsDiv.appendChild(div);
-                    });
+                    if (data.status === 'Ok' && data.users) {
+                        const tbody = document.querySelector('#contactsTableBody');
+                        tbody.innerHTML = '';
+                        
+                        data.users.forEach(user => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${user.name}</a></td>
+                                <td>${user.phone || ''}</td>
+                                <td>${user.cabinet || ''}</td>
+                                <td>${user.email || ''}</td>
+                                <td>${user.position || ''}</td>
+                                <td>${user.department || ''}</td>
+                                <td>${user.section || ''}</td>
+                                <td class="actions-cell">
+                                    <div class="actions-wrapper">
+                                        <span class="icon-edit" title="Редактировать"></span>
+                                        <span class="icon-delete" title="Удалить"></span>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                        
+                        setupActionButtons();
+                    }
                 })
                 .catch(err => {
                     console.error('Ошибка поиска:', err);
                 });
         });
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            const headerText = document.querySelector('#divisionTitle');
+            if (headerText) {
+                headerText.textContent = `Все контакты ${division === 'giredmet' ? 'Гиредмет' : 'Графит'}`;
+            }
+            
+            loadBreadcrumbs();
+            switchDivision(division);
+            loadAllWorkers();
+            paginateTable();
+        });
+
     </script>
 
     <div id="addContactModal" class="modal">

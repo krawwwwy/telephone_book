@@ -1,3 +1,13 @@
+-- Вставка экстренных служб
+SET search_path TO public;
+
+INSERT INTO main (name, phone_number, email) VALUES 
+    ('Служба безопасности', '+7(495)123-01-01', 'security@rosatom.ru'),
+    ('Пожарная служба', '+7(495)123-01-02', 'fire@rosatom.ru'),
+    ('Медицинская служба', '+7(495)123-01-03', 'medical@rosatom.ru'),
+    ('Техническая поддержка', '+7(495)123-01-04', 'tech@rosatom.ru'),
+    ('Дежурный инженер', '+7(495)123-01-05', 'duty@rosatom.ru');
+
 -- Вставка тестовых данных для Гиредмет
 SET search_path TO giredmet;
 
