@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"fmt"
-	"telephone-book/internal/domain/models"
 
 	_ "github.com/lib/pq"
 )
@@ -33,7 +32,7 @@ func (s *Storage) CreateDepartment(ctx context.Context, institute string, name s
 
 	return id, nil
 }
-func (s *Storage) GetAllDepartments(ctx context.Context, institute string) ([]models.Department, error) {
+func (s *Storage) GetAllDepartments(ctx context.Context, institute string) ([]string, error) {
 	const op = "storage.postgresql.departments.GetAllDepartments"
 
 	var schema string
@@ -56,9 +55,9 @@ func (s *Storage) GetAllDepartments(ctx context.Context, institute string) ([]mo
 	}
 	defer rows.Close()
 
-	var departments []models.Department
+	var departments []string
 	for rows.Next() {
-		var department models.Department
+		var department string
 
 		err := rows.Scan(&department)
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"telephone-book/internal/domain/models"
 	"telephone-book/internal/lib/logger/sl"
 
 	resp "telephone-book/internal/lib/response"
@@ -15,11 +14,11 @@ import (
 
 type AllDepartmentsResponse struct {
 	resp.Response
-	Departments []models.Department `json:"departments"`
+	Departments []string `json:"departments"`
 }
 
 type AllDepartmentsGetter interface {
-	GetAllDepartments(ctx context.Context, institute string) ([]models.Department, error)
+	GetAllDepartments(ctx context.Context, institute string) ([]string, error)
 }
 
 func GetAll(ctx context.Context, log *slog.Logger, allDepartmnetsGetter AllDepartmentsGetter) http.HandlerFunc {
@@ -57,7 +56,7 @@ func GetAll(ctx context.Context, log *slog.Logger, allDepartmnetsGetter AllDepar
 	}
 }
 
-func readResponseOk(w http.ResponseWriter, r *http.Request, departments []models.Department) {
+func readResponseOk(w http.ResponseWriter, r *http.Request, departments []string) {
 	render.JSON(w, r, AllDepartmentsResponse{
 		Response:    resp.OK(),
 		Departments: departments,
