@@ -18,6 +18,9 @@
             <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
+            <a href="admin.html" class="btn-primary">
+                Админ-панель
+            </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
@@ -50,7 +53,6 @@
                     <p><strong>Дата рождения:</strong> <span id="birthday">12 ноября</span></p>
                 </div>
             </div>
-
         </div>
 
         <div class="profile-description">
@@ -62,7 +64,7 @@
         </div>
 
         <div class="profile-actions">
-            <button class="cancel-btn">Удалить контакт</button>
+            <button class="cancel-btn" onclick="openDeleteContactModal()">Удалить контакт</button>
             <button class="submit-btn" onclick="openEditModal()">Редактировать</button>
         </div>
     </main>
@@ -89,6 +91,32 @@
                     <button type="submit" class="submit-btn">Сохранить</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p class="modal-subtitle">Подтвердите удаление</p>
+
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDelete()">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteContactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDeleteContactModal()">&times;</span>
+            <h2>Удаление контакта</h2>
+            <p id="deleteConfirmText">Вы уверены, что хотите удалить этот контакт?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="closeDeleteContactModal()">Отмена</button>
+                <button class="submit-btn" onclick="confirmDeleteContact()">Удалить</button>
+            </div>
         </div>
     </div>
 
@@ -171,7 +199,24 @@
             closePhotoDeleteModal();
         }
 
+        function openDeleteContactModal() {
+            const el = document.getElementById('deleteConfirmText');
+            el.innerText = `Вы уверены, что хотите удалить этот контакт?`;
+            el.classList.add('modal-subtitle');
+            document.getElementById('deleteContactModal').style.display = 'flex';
+        }
 
+        function closeDeleteContactModal() {
+            document.getElementById('deleteContactModal').style.display = 'none';
+        }
+
+        function confirmDeleteContact() {
+            if (contactRowToDelete) {
+                contactRowToDelete.remove();
+                contactRowToDelete = null;
+            }
+            closeDeleteContactModal();
+        }
 
         document.getElementById('photoInput').addEventListener('change', function () {
             const file = this.files[0];
