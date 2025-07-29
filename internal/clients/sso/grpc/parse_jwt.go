@@ -26,3 +26,24 @@ func ParseUserIDFromToken(tokenString string, secret string) (int64, error) {
 	}
 	return 0, errors.New("invalid token claims")
 }
+
+// ParseEmailFromToken извлекает email из jwt токена
+func ParseEmailFromToken(tokenString string, secret string) (string, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if email, ok := claims["email"].(string); ok {
+			return email, nil
+		}
+		return "", errors.New("email not found in token")
+	}
+	return "", errors.New("invalid token claims")
+}

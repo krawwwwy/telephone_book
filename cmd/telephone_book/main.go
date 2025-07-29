@@ -18,6 +18,7 @@ import (
 	"telephone-book/internal/http_server/handlers/auth/check_role"
 	"telephone-book/internal/http_server/handlers/auth/login"
 	"telephone-book/internal/http_server/handlers/auth/register"
+	"telephone-book/internal/http_server/handlers/auth/user_info"
 	"telephone-book/internal/http_server/handlers/departments"
 	"telephone-book/internal/http_server/handlers/utility/birthday"
 	"telephone-book/internal/http_server/handlers/utility/emergency"
@@ -87,6 +88,7 @@ func main() {
 		r.Post("/login", login.New(ctx, ssoClient, log))
 		r.Post("/register", register.New(ctx, ssoClient, log))
 		r.Get("/check-role", check_role.CheckRole(ctx, log))
+		r.Get("/user-info", user_info.UserInfo(ctx, log))
 	})
 
 	// Срочные службы
