@@ -67,16 +67,38 @@
             
             <div class="birthday-section">
                 <h3 id="birthday-section-title">Дни рождения</h3>
+                
+                <!-- Карусель для сегодняшних дней рождения -->
                 <div class="birthday-today">
                     <h4>Сегодня</h4>
-                    <div id="birthday-today" class="birthday-list">
-                        <!-- Дни рождения сегодня -->
+                    <div class="birthday-carousel" id="today-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track" id="today-track">
+                                <!-- Карточки сегодняшних именинников -->
+                            </div>
+                        </div>
+                        <div class="carousel-controls">
+                            <button class="carousel-btn prev" id="today-prev">‹</button>
+                            <div class="carousel-dots" id="today-dots"></div>
+                            <button class="carousel-btn next" id="today-next">›</button>
+                        </div>
                     </div>
                 </div>
+                
+                <!-- Карусель для завтрашних дней рождения -->
                 <div class="birthday-tomorrow">
                     <h4>Завтра</h4>
-                    <div id="birthday-tomorrow" class="birthday-list">
-                        <!-- Дни рождения завтра -->
+                    <div class="birthday-carousel" id="tomorrow-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track" id="tomorrow-track">
+                                <!-- Карточки завтрашних именинников -->
+                            </div>
+                        </div>
+                        <div class="carousel-controls">
+                            <button class="carousel-btn prev" id="tomorrow-prev">‹</button>
+                            <div class="carousel-dots" id="tomorrow-dots"></div>
+                            <button class="carousel-btn next" id="tomorrow-next">›</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,9 +195,9 @@
                 
                 console.log('All today birthday users:', allTodayUsers);
                 
-                // Отображение именинников сегодня
-                const todayDiv = document.getElementById('birthday-today');
-                todayDiv.innerHTML = '';
+                // Создание карусели для сегодняшних именинников
+                const todayTrack = document.getElementById('today-track');
+                todayTrack.innerHTML = '';
                 
                 if (allTodayUsers.length > 0) {
                     // Показываем первого в главной панели
@@ -186,28 +208,60 @@
                     
                     document.getElementById('birthdayName').textContent = mainUserName;
                     
-                    // Добавляем всех именинников сегодня
+                    // Создаем карточки для карусели
                     allTodayUsers.forEach((user, index) => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
                         console.log(`Adding birthday user ${index + 1}:`, fullName);
                         
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `<strong>${fullName}</strong><br><small>${user.institute}</small>`;
-                        todayDiv.appendChild(userDiv);
+                        // Формируем URL для фотографии
+                        const photoUrl = user.email ? 
+                            `${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(user.institute.toLowerCase() === 'гиредмет' ? 'giredmet' : 'grafit')}` :
+                            'images/person.jpg';
+                        
+                        const userCard = document.createElement('div');
+                        userCard.className = 'birthday-card';
+                        userCard.innerHTML = `
+                            <div class="card-photo-container">
+                                <img src="${photoUrl}" alt="Фото сотрудника" class="card-photo" onerror="this.src='images/person.jpg'">
+                            </div>
+                            <div class="card-info">
+                                <div class="card-name">${shortName}</div>
+                                <div class="card-institute">${user.institute}</div>
+                            </div>
+                        `;
+                        todayTrack.appendChild(userCard);
                     });
                     
+                    // Инициализируем карусель для сегодня
+                    initializeCarousel('today', allTodayUsers.length);
+                    
+                    // Показываем карусель и панель
+                    const todayCarousel = document.getElementById('today-carousel');
                     const birthdayPanel = document.querySelector('.birthday-panel');
+                    
+                    if (todayCarousel) {
+                        todayCarousel.style.display = 'block';
+                    }
                     if (birthdayPanel) {
                         birthdayPanel.style.display = 'block';
                         console.log('Showing birthday panel -', allTodayUsers.length, 'users');
                     }
                 } else {
+                    // Скрываем карусель и панель если нет именинников
+                    const todayCarousel = document.getElementById('today-carousel');
                     const birthdayPanel = document.querySelector('.birthday-panel');
+                    
+                    if (todayCarousel) {
+                        todayCarousel.style.display = 'none';
+                    }
                     if (birthdayPanel) {
                         birthdayPanel.style.display = 'none';
                         console.log('Hiding birthday panel - no users');
                     }
+                    
+                    // Добавляем сообщение об отсутствии именинников
+                    todayTrack.innerHTML = '<div class="no-birthdays">Нет именинников сегодня</div>';
                 }
                 
                 // Обработка результатов для завтра
@@ -241,26 +295,190 @@
                 
                 console.log('All tomorrow birthday users:', allTomorrowUsers);
                 
-                // Отображение именинников завтра
-                const tomorrowDiv = document.getElementById('birthday-tomorrow');
-                tomorrowDiv.innerHTML = '';
+                // Создание карусели для завтрашних именинников
+                const tomorrowTrack = document.getElementById('tomorrow-track');
+                tomorrowTrack.innerHTML = '';
                 
                 if (allTomorrowUsers.length > 0) {
                     console.log('Number of users with birthday tomorrow:', allTomorrowUsers.length);
                     
                     allTomorrowUsers.forEach((user, index) => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
                         console.log(`Adding tomorrow birthday user ${index + 1}:`, fullName);
                         
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `<strong>${fullName}</strong><br><small>${user.institute}</small>`;
-                        tomorrowDiv.appendChild(userDiv);
+                        // Формируем URL для фотографии
+                        const photoUrl = user.email ? 
+                            `${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(user.institute.toLowerCase() === 'гиредмет' ? 'giredmet' : 'grafit')}` :
+                            'images/person.jpg';
+                        
+                        const userCard = document.createElement('div');
+                        userCard.className = 'birthday-card';
+                        userCard.innerHTML = `
+                            <div class="card-photo-container">
+                                <img src="${photoUrl}" alt="Фото сотрудника" class="card-photo" onerror="this.src='images/person.jpg'">
+                            </div>
+                            <div class="card-info">
+                                <div class="card-name">${shortName}</div>
+                                <div class="card-institute">${user.institute}</div>
+                            </div>
+                        `;
+                        tomorrowTrack.appendChild(userCard);
                     });
+                    
+                    // Инициализируем карусель для завтра
+                    initializeCarousel('tomorrow', allTomorrowUsers.length);
+                    
+                    // Показываем карусель
+                    const tomorrowCarousel = document.getElementById('tomorrow-carousel');
+                    if (tomorrowCarousel) {
+                        tomorrowCarousel.style.display = 'block';
+                    }
+                } else {
+                    // Скрываем карусель если нет именинников
+                    const tomorrowCarousel = document.getElementById('tomorrow-carousel');
+                    if (tomorrowCarousel) {
+                        tomorrowCarousel.style.display = 'none';
+                    }
+                    
+                    // Добавляем сообщение об отсутствии именинников
+                    tomorrowTrack.innerHTML = '<div class="no-birthdays">Нет именинников завтра</div>';
                 }
                 
             } catch (error) {
                 console.error('Error loading birthdays:', error);
+            }
+        }
+
+        // Очистка интервалов при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            stopAutoSlide('today');
+            stopAutoSlide('tomorrow');
+        });
+
+        // Карусель для дней рождения
+        const carouselStates = {
+            today: { currentIndex: 0, totalCards: 0, intervalId: null },
+            tomorrow: { currentIndex: 0, totalCards: 0, intervalId: null }
+        };
+
+        function initializeCarousel(type, totalCards) {
+            const state = carouselStates[type];
+            state.currentIndex = 0;
+            state.totalCards = totalCards;
+            
+            if (totalCards === 0) return;
+            
+            // Создаем точки индикации
+            createCarouselDots(type, totalCards);
+            
+            // Настраиваем кнопки
+            setupCarouselControls(type);
+            
+            // Показываем первую карточку
+            showCard(type, 0);
+            
+            // Настраиваем события наведения мыши
+            setupMouseEvents(type);
+            
+            // Запускаем автопрокрутку
+            startAutoSlide(type);
+        }
+
+        function setupMouseEvents(type) {
+            const carousel = document.getElementById(`${type}-carousel`);
+            
+            carousel.addEventListener('mouseenter', () => {
+                stopAutoSlide(type);
+            });
+            
+            carousel.addEventListener('mouseleave', () => {
+                startAutoSlide(type);
+            });
+        }
+
+        function createCarouselDots(type, totalCards) {
+            const dotsContainer = document.getElementById(`${type}-dots`);
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < totalCards; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'carousel-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToCard(type, i));
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function setupCarouselControls(type) {
+            const prevBtn = document.getElementById(`${type}-prev`);
+            const nextBtn = document.getElementById(`${type}-next`);
+            
+            prevBtn.addEventListener('click', () => prevCard(type));
+            nextBtn.addEventListener('click', () => nextCard(type));
+        }
+
+        function showCard(type, index) {
+            const track = document.getElementById(`${type}-track`);
+            const cards = track.querySelectorAll('.birthday-card');
+            const dots = document.querySelectorAll(`#${type}-dots .carousel-dot`);
+            
+            // Скрываем все карточки
+            cards.forEach(card => card.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+            
+            // Показываем нужную карточку
+            if (cards[index]) {
+                cards[index].classList.add('active');
+            }
+            if (dots[index]) {
+                dots[index].classList.add('active');
+            }
+            
+            carouselStates[type].currentIndex = index;
+        }
+
+        function nextCard(type) {
+            const state = carouselStates[type];
+            const nextIndex = (state.currentIndex + 1) % state.totalCards;
+            showCard(type, nextIndex);
+            resetAutoSlide(type);
+        }
+
+        function prevCard(type) {
+            const state = carouselStates[type];
+            const prevIndex = (state.currentIndex - 1 + state.totalCards) % state.totalCards;
+            showCard(type, prevIndex);
+            resetAutoSlide(type);
+        }
+
+        function goToCard(type, index) {
+            showCard(type, index);
+            resetAutoSlide(type);
+        }
+
+        function startAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.totalCards <= 1) return;
+            
+            state.intervalId = setInterval(() => {
+                nextCard(type);
+            }, 4000); // Переключение каждые 4 секунды
+        }
+
+        function resetAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.intervalId) {
+                clearInterval(state.intervalId);
+            }
+            startAutoSlide(type);
+        }
+
+        function stopAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.intervalId) {
+                clearInterval(state.intervalId);
+                state.intervalId = null;
             }
         }
 
