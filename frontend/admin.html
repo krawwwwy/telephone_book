@@ -18,9 +18,6 @@
             <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
-            <a href="admin.html" class="btn-primary">
-                Админ-панель
-            </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
@@ -624,6 +621,8 @@
                     // Пользователь администратор, загружаем данные
                     loadAllUsers();
                     loadDepartments('giredmet');
+                    // Обновляем header после успешной проверки
+                    updateHeaderButtons();
                 } else {
                     alert('Доступ запрещен. Требуются права администратора.');
                     window.location.href = 'index.html';
@@ -633,6 +632,94 @@
                 alert('Ошибка проверки доступа');
                 window.location.href = 'index.html';
             }
+        }
+
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                if (data.status === 'Ok') {
+                    return { email: data.email, role: data.role };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка получения информации о пользователе:', error);
+                return null;
+            }
+        }
+
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = userInfo.role;
+                        }
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Ошибка обновления header:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Выход из системы
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.reload();
         }
 
         // Редактирование отдела
