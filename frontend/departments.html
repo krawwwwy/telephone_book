@@ -36,7 +36,6 @@
             </div>
             <ul class="department-list" id="department-list">
             </ul>
-            <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
         </aside>
         <section class="center-panel">
             <nav class="breadcrumbs" id="breadcrumbs">
@@ -172,14 +171,6 @@
             if (value) {
                 console.log(`Поиск: ${value}`);
             }
-        }
-
-        function openAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "flex";
-        }
-
-        function closeAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "none";
         }
 
         // Загрузка сотрудников
@@ -549,53 +540,6 @@
                 });
             }
 
-            // Обработка формы добавления отдела
-            const departmentForm = document.getElementById('departmentForm');
-            if (departmentForm) {
-                departmentForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(e.target);
-                    const departmentName = formData.get('name') || e.target.querySelector('input[type="text"]').value;
-
-                    // Проверяем наличие токена авторизации
-                    const authToken = localStorage.getItem('authToken');
-                    if (!authToken) {
-                        alert('Для добавления отдела необходимо авторизоваться');
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch(`${API_BASE}/departments`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${authToken}`
-                            },
-                            body: JSON.stringify({
-                                name: departmentName,
-                                institute: division
-                            })
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.status === 'Ok') {
-                            alert('Отдел успешно добавлен');
-                            closeAddDepartmentModal();
-                            loadDepartments(division);
-                            e.target.reset();
-                        } else {
-                            alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
-                        }
-                    } catch (error) {
-                        console.error('Ошибка при добавлении отдела:', error);
-                        alert('Ошибка при добавлении отдела');
-                    }
-                });
-            }
-
             // Обработка импорта файла
             const uploadForm = document.getElementById('uploadForm');
             if (uploadForm) {
@@ -886,21 +830,6 @@
         </div>
     </div>
 
-    <div id="addDepartmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
-            <h2>Добавление отдела</h2>
-            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
-            <form id="departmentForm">
-                <input type="text" placeholder="Название отдела" required>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
 
     <script>
         const rowsPerPage = 10;
@@ -1170,10 +1099,6 @@
                 closeAddContactModal();
             }
 
-            if (event.target === document.getElementById("addDepartmentModal")) {
-                closeAddDepartmentModal();
-            }
-
             if (event.target === document.getElementById("importModal")) {
                 closeImportModal();
             }
@@ -1246,18 +1171,22 @@
                                 roleDisplay = 'Гость';
                         }
                         
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
                         headerRight.innerHTML = `
                             <div class="user-info">
                                 <span class="user-email">${userInfo.email}</span>
                                 <span class="user-role">${roleDisplay}</span>
                             </div>
-                            <a href="admin.html" class="btn-primary">Админ-панель</a>
+                            ${adminPanelButton}
                             <button class="btn-primary" onclick="logout()">Выйти</button>
                         `;
                     } else {
                         headerRight.innerHTML = `
                             <span class="user-info">Авторизован</span>
-                            <a href="admin.html" class="btn-primary">Админ-панель</a>
                             <button class="btn-primary" onclick="logout()">Выйти</button>
                         `;
                     }
@@ -1265,13 +1194,11 @@
                     console.error('Error updating header with user info:', error);
                     headerRight.innerHTML = `
                         <span class="user-info">Авторизован</span>
-                        <a href="admin.html" class="btn-primary">Админ-панель</a>
                         <button class="btn-primary" onclick="logout()">Выйти</button>
                     `;
                 }
             } else {
                 headerRight.innerHTML = `
-                    <a href="admin.html" class="btn-primary">Админ-панель</a>
                     <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
                 `;
             }

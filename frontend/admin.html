@@ -288,8 +288,48 @@
 
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            loadAllUsers();
+            checkAdminAccess();
         });
+
+        // Проверка доступа администратора
+        async function checkAdminAccess() {
+            const authToken = localStorage.getItem('authToken');
+            
+            if (!authToken) {
+                alert('Для доступа к админ-панели необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    alert('Ошибка проверки авторизации');
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.role === 'admin') {
+                    // Пользователь администратор, загружаем данные
+                    loadAllUsers();
+                } else {
+                    alert('Доступ запрещен. Требуются права администратора.');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                alert('Ошибка проверки доступа');
+                window.location.href = 'index.html';
+            }
+        }
 
     </script>
 </body>

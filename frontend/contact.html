@@ -218,19 +218,22 @@
                                 roleDisplay = 'Гость';
                         }
                         
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
                         headerRight.innerHTML = `
                             <div class="user-info">
                                 <span class="user-email">${userInfo.email}</span>
                                 <span class="user-role">${roleDisplay}</span>
                             </div>
-                            <a href="admin.html" class="btn-primary">Админ-панель</a>
+                            ${adminPanelButton}
                             <button class="btn-primary" onclick="logout()">Выйти</button>
                         `;
                     } else {
-                        // Fallback если не удалось получить информацию о пользователе
                         headerRight.innerHTML = `
                             <span class="user-info">Авторизован</span>
-                            <a href="admin.html" class="btn-primary">Админ-панель</a>
                             <button class="btn-primary" onclick="logout()">Выйти</button>
                         `;
                     }
@@ -238,13 +241,11 @@
                     console.error('Error updating header with user info:', error);
                     headerRight.innerHTML = `
                         <span class="user-info">Авторизован</span>
-                        <a href="admin.html" class="btn-primary">Админ-панель</a>
                         <button class="btn-primary" onclick="logout()">Выйти</button>
                     `;
                 }
             } else {
                 headerRight.innerHTML = `
-                    <a href="admin.html" class="btn-primary">Админ-панель</a>
                     <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
                 `;
             }
