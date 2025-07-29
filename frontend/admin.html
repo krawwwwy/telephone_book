@@ -29,7 +29,7 @@
         <button class="btn-secondary" onclick="window.history.back()">Вернуться</button>
         <h1>Панель Администратора</h1>
         <div class="admin-buttons">
-            <button class="add-btn" onclick="openModal('addUserModal')">Создать пользователя</button>
+            <button class="add-btn" onclick="openModal('addUserModal')">Создать пользователя системы</button>
             <button class="add-btn" onclick="openModal('addDepartmentModal')">Добавить отдел</button>
         </div>
 
@@ -52,31 +52,31 @@
 
     <div id="addUserModal" class="modal">
         <div class="modal-content">
-            <h2>Добавление пользователя</h2>
-            <p class="modal-subtitle">Введите учетные данные</p>
+            <h2>Создание пользователя системы</h2>
+            <p class="modal-subtitle">Создание учетной записи для входа в систему</p>
 
-            <input type="text" placeholder="Логин" class="auth-input">
-            <input type="password" placeholder="Пароль" class="auth-input" autocomplete="new-password">
+            <input type="text" placeholder="Email (логин)*" class="auth-input">
+            <input type="password" placeholder="Пароль*" class="auth-input" autocomplete="new-password">
 
             <div class="role-selection">
-                <p class="role-title">Выберите роль:</p>
+                <p class="role-title">Выберите роль пользователя:</p>
                 <div class="role-options">
                     <label class="role-option">
                         <input type="radio" name="userRole" value="user" checked>
                         <span class="role-checkmark"></span>
-                        <span class="role-label">Пользователь</span>
+                        <span class="role-label">Пользователь (может просматривать данные)</span>
                     </label>
 
                     <label class="role-option">
                         <input type="radio" name="userRole" value="admin">
                         <span class="role-checkmark"></span>
-                        <span class="role-label">Администратор</span>
+                        <span class="role-label">Администратор (полный доступ)</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="cancel-btn" onclick="closeModal('addUserModal')">Отмена</button>
-                <button type="submit" class="submit-btn" onclick="submitUser()">Создать</button>
+                <button type="submit" class="submit-btn" onclick="submitUser()">Создать пользователя</button>
             </div>
         </div>
     </div>
@@ -180,6 +180,12 @@
                 // Очищаем переменные удаления
                 currentDeletingDepartment = null;
                 currentDeletingInstitute = null;
+            } else if (modalId === 'addUserModal') {
+                // Очищаем форму создания пользователя
+                const modal = document.getElementById('addUserModal');
+                modal.querySelector('input[type="text"]').value = '';
+                modal.querySelector('input[type="password"]').value = '';
+                modal.querySelector('input[name="userRole"][value="user"]').checked = true;
             }
         }
 
@@ -286,9 +292,84 @@
             }
         }
 
-        // Создание пользователя (заглушка)
+        // Создание пользователя системы
         async function submitUser() {
-            alert('Функция создания пользователя в разработке');
+            const modal = document.getElementById('addUserModal');
+            const loginInput = modal.querySelector('input[type="text"]');
+            const passwordInput = modal.querySelector('input[type="password"]');
+            const selectedRole = modal.querySelector('input[name="userRole"]:checked');
+
+            // Валидация
+            if (!loginInput.value.trim()) {
+                alert('Пожалуйста, введите логин пользователя');
+                return;
+            }
+
+            if (!passwordInput.value.trim()) {
+                alert('Пожалуйста, введите пароль');
+                return;
+            }
+
+            if (passwordInput.value.length < 6) {
+                alert('Пароль должен содержать минимум 6 символов');
+                return;
+            }
+
+            if (!selectedRole) {
+                alert('Пожалуйста, выберите роль пользователя');
+                return;
+            }
+
+            // Проверка email формата
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(loginInput.value.trim())) {
+                alert('Пожалуйста, введите корректный email адрес');
+                return;
+            }
+
+            const requestData = {
+                email: loginInput.value.trim(),
+                password: passwordInput.value,
+                role: selectedRole.value
+            };
+
+            console.log('Создаем пользователя системы:', { ...requestData, password: '***' });
+
+            // Проверяем токен авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для создания пользователя необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера при создании пользователя:', result);
+
+                if (result.status === 'Ok') {
+                    alert(`Пользователь системы успешно создан!\nEmail: ${requestData.email}\nРоль: ${requestData.role === 'admin' ? 'Администратор' : 'Пользователь'}\nUser ID: ${result.user_id}`);
+                    closeModal('addUserModal');
+                    
+                    // Очищаем форму
+                    loginInput.value = '';
+                    passwordInput.value = '';
+                    modal.querySelector('input[name="userRole"][value="user"]').checked = true;
+                } else {
+                    alert('Ошибка при создании пользователя: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при создании пользователя:', error);
+                alert('Ошибка при создании пользователя: ' + error.message);
+            }
         }
 
         // Загрузка отделов для админ-панели
