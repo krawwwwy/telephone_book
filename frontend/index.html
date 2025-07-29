@@ -124,141 +124,143 @@
         }
 
         // Загрузка дней рождения
-        async function loadBirthdays(institute = null) {
+        async function loadBirthdays() {
             try {
-                // Используем переданный институт или текущий
-                const targetInstitute = institute || currentInstitute;
+                console.log('Loading birthdays for both institutes');
                 
-                console.log('Loading birthdays for institute:', targetInstitute);
-                
-                // Обновляем заголовок с названием института
+                // Обновляем заголовок
                 const titleElement = document.getElementById('birthday-section-title');
                 if (titleElement) {
-                    titleElement.textContent = `Дни рождения (${capitalize(targetInstitute)})`;
+                    titleElement.textContent = 'Дни рождения (Все институты)';
                 }
                 
-                // Загрузка дней рождения сегодня
-                const todayResponse = await fetch(`${API_BASE}/birthday/today?institute=${targetInstitute}`);
+                // Загружаем дни рождения для обеих организаций
+                const [giredmetTodayResponse, grafitTodayResponse, giredmetTomorrowResponse, grafitTomorrowResponse] = await Promise.all([
+                    fetch(`${API_BASE}/birthday/today?institute=giredmet`),
+                    fetch(`${API_BASE}/birthday/today?institute=grafit`),
+                    fetch(`${API_BASE}/birthday/tomorrow?institute=giredmet`),
+                    fetch(`${API_BASE}/birthday/tomorrow?institute=grafit`)
+                ]);
                 
-                let todayUsers = [];
+                // Обработка результатов для сегодня
+                let allTodayUsers = [];
+                
+                // Гиредмет сегодня
                 try {
-                    const todayText = await todayResponse.text();
-                    console.log('Today response text:', todayText);
-                    
-                    if (todayText.trim()) {
-                        const todayData = JSON.parse(todayText);
-                        
-                        // Проверяем что это массив (успешный ответ) или объект с ошибкой
-                        if (Array.isArray(todayData)) {
-                            todayUsers = todayData;
-                        } else if (todayData.status === 'Error') {
-                            console.error('Birthday API error:', todayData.error);
-                            todayUsers = [];
-                        } else {
-                            console.warn('Unexpected birthday response format:', todayData);
-                            todayUsers = [];
+                    const giredmetTodayText = await giredmetTodayResponse.text();
+                    if (giredmetTodayText.trim()) {
+                        const giredmetTodayData = JSON.parse(giredmetTodayText);
+                        if (Array.isArray(giredmetTodayData)) {
+                            allTodayUsers = allTodayUsers.concat(giredmetTodayData.map(user => ({...user, institute: 'Гиредмет'})));
                         }
                     }
-                } catch (parseError) {
-                    console.error('Error parsing today response:', parseError);
-                    todayUsers = [];
+                } catch (error) {
+                    console.error('Error parsing Giredmet today response:', error);
                 }
                 
-                console.log('Today birthday users:', todayUsers);
-                
-                if (Array.isArray(todayUsers)) {
-                    const todayDiv = document.getElementById('birthday-today');
-                    console.log('Today div element:', todayDiv);
-                    
-                    todayDiv.innerHTML = '';
-                    
-                    console.log('Number of users with birthday today:', todayUsers.length);
-                    
-                    // Если есть именинники сегодня, показываем первого в главной панели
-                    if (todayUsers.length > 0) {
-                        const mainUser = todayUsers[0];
-                        const mainUserName = `${mainUser.surname} ${mainUser.name} ${mainUser.middle_name || ''}`.trim();
-                        console.log('Main birthday user:', mainUserName);
-                        
-                        document.getElementById('birthdayName').textContent = mainUserName;
-                        // Можно добавить загрузку фото если есть API
+                // Графит сегодня
+                try {
+                    const grafitTodayText = await grafitTodayResponse.text();
+                    if (grafitTodayText.trim()) {
+                        const grafitTodayData = JSON.parse(grafitTodayText);
+                        if (Array.isArray(grafitTodayData)) {
+                            allTodayUsers = allTodayUsers.concat(grafitTodayData.map(user => ({...user, institute: 'Графит'})));
+                        }
                     }
+                } catch (error) {
+                    console.error('Error parsing Grafit today response:', error);
+                }
+                
+                console.log('All today birthday users:', allTodayUsers);
+                
+                // Отображение именинников сегодня
+                const todayDiv = document.getElementById('birthday-today');
+                todayDiv.innerHTML = '';
+                
+                if (allTodayUsers.length > 0) {
+                    // Показываем первого в главной панели
+                    const mainUser = allTodayUsers[0];
+                    const mainUserName = `${mainUser.surname} ${mainUser.name} ${mainUser.middle_name || ''}`.trim();
                     
-                    // Отображаем всех именинников в списке
-                    todayUsers.forEach((user, index) => {
+                    console.log('Main birthday user:', mainUserName);
+                    
+                    document.getElementById('birthdayName').textContent = mainUserName;
+                    
+                    // Добавляем всех именинников сегодня
+                    allTodayUsers.forEach((user, index) => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         console.log(`Adding birthday user ${index + 1}:`, fullName);
                         
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${fullName}`;
+                        userDiv.innerHTML = `<strong>${fullName}</strong><br><small>${user.institute}</small>`;
                         todayDiv.appendChild(userDiv);
                     });
                     
-                    // Если именинников сегодня нет, скрываем панель поздравления
                     const birthdayPanel = document.querySelector('.birthday-panel');
-                    if (todayUsers.length === 0) {
-                        birthdayPanel.style.display = 'none';
-                        console.log('Hiding birthday panel - no users');
-                    } else {
+                    if (birthdayPanel) {
                         birthdayPanel.style.display = 'block';
-                        console.log('Showing birthday panel -', todayUsers.length, 'users');
+                        console.log('Showing birthday panel -', allTodayUsers.length, 'users');
                     }
                 } else {
-                    console.log('Invalid today birthday response - not an array:', todayUsers);
+                    const birthdayPanel = document.querySelector('.birthday-panel');
+                    if (birthdayPanel) {
+                        birthdayPanel.style.display = 'none';
+                        console.log('Hiding birthday panel - no users');
+                    }
                 }
-
-                // Загрузка дней рождения завтра
-                const tomorrowResponse = await fetch(`${API_BASE}/birthday/tomorrow?institute=${targetInstitute}`);
                 
-                let tomorrowUsers = [];
+                // Обработка результатов для завтра
+                let allTomorrowUsers = [];
+                
+                // Гиредмет завтра
                 try {
-                    const tomorrowText = await tomorrowResponse.text();
-                    console.log('Tomorrow response text:', tomorrowText);
-                    
-                    if (tomorrowText.trim()) {
-                        const tomorrowData = JSON.parse(tomorrowText);
-                        
-                        // Проверяем что это массив (успешный ответ) или объект с ошибкой
-                        if (Array.isArray(tomorrowData)) {
-                            tomorrowUsers = tomorrowData;
-                        } else if (tomorrowData.status === 'Error') {
-                            console.error('Tomorrow birthday API error:', tomorrowData.error);
-                            tomorrowUsers = [];
-                        } else {
-                            console.warn('Unexpected tomorrow response format:', tomorrowData);
-                            tomorrowUsers = [];
+                    const giredmetTomorrowText = await giredmetTomorrowResponse.text();
+                    if (giredmetTomorrowText.trim()) {
+                        const giredmetTomorrowData = JSON.parse(giredmetTomorrowText);
+                        if (Array.isArray(giredmetTomorrowData)) {
+                            allTomorrowUsers = allTomorrowUsers.concat(giredmetTomorrowData.map(user => ({...user, institute: 'Гиредмет'})));
                         }
                     }
-                } catch (parseError) {
-                    console.error('Error parsing tomorrow response:', parseError);
-                    tomorrowUsers = [];
+                } catch (error) {
+                    console.error('Error parsing Giredmet tomorrow response:', error);
                 }
                 
-                console.log('Tomorrow birthday users:', tomorrowUsers);
+                // Графит завтра
+                try {
+                    const grafitTomorrowText = await grafitTomorrowResponse.text();
+                    if (grafitTomorrowText.trim()) {
+                        const grafitTomorrowData = JSON.parse(grafitTomorrowText);
+                        if (Array.isArray(grafitTomorrowData)) {
+                            allTomorrowUsers = allTomorrowUsers.concat(grafitTomorrowData.map(user => ({...user, institute: 'Графит'})));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing Grafit tomorrow response:', error);
+                }
                 
-                if (Array.isArray(tomorrowUsers)) {
-                    const tomorrowDiv = document.getElementById('birthday-tomorrow');
-                    console.log('Tomorrow div element:', tomorrowDiv);
+                console.log('All tomorrow birthday users:', allTomorrowUsers);
+                
+                // Отображение именинников завтра
+                const tomorrowDiv = document.getElementById('birthday-tomorrow');
+                tomorrowDiv.innerHTML = '';
+                
+                if (allTomorrowUsers.length > 0) {
+                    console.log('Number of users with birthday tomorrow:', allTomorrowUsers.length);
                     
-                    tomorrowDiv.innerHTML = '';
-                    
-                    console.log('Number of users with birthday tomorrow:', tomorrowUsers.length);
-                    
-                    tomorrowUsers.forEach((user, index) => {
+                    allTomorrowUsers.forEach((user, index) => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
                         console.log(`Adding tomorrow birthday user ${index + 1}:`, fullName);
                         
                         const userDiv = document.createElement('div');
                         userDiv.className = 'birthday-user';
-                        userDiv.innerHTML = `${fullName}`;
+                        userDiv.innerHTML = `<strong>${fullName}</strong><br><small>${user.institute}</small>`;
                         tomorrowDiv.appendChild(userDiv);
                     });
-                } else {
-                    console.log('Invalid tomorrow birthday response - not an array:', tomorrowUsers);
                 }
+                
             } catch (error) {
-                console.error('Ошибка загрузки дней рождения:', error);
+                console.error('Error loading birthdays:', error);
             }
         }
 
@@ -406,7 +408,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadEmergencyServices();
             loadDepartments('giredmet'); // Загружаем отделы Гиредмет по умолчанию
-            loadBirthdays('giredmet'); // Загружаем дни рождения Гиредмет по умолчанию
+            loadBirthdays(); // Загружаем дни рождения для обеих организаций
             updateHeaderButtons();
         });
 
