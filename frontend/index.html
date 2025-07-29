@@ -55,16 +55,6 @@
         </section>
         
         <aside class="right-sidebar">
-            <div class="birthday-panel">
-                <h3>🎉 Поздравляем с Днем рождения!</h3>
-                <div class="birthday-photo-container">
-                    <img src="images/person.jpg" alt="Фото сотрудника" class="birthday-photo" id="birthdayPhoto">
-                </div>
-                <div class="birthday-info">
-                    <div class="birthday-name" id="birthdayName">Иванов Иван Иванович</div>
-                </div>
-            </div>
-            
             <div class="birthday-section">
                 <h3 id="birthday-section-title">Дни рождения</h3>
                 
@@ -200,14 +190,6 @@
                 todayTrack.innerHTML = '';
                 
                 if (allTodayUsers.length > 0) {
-                    // Показываем первого в главной панели
-                    const mainUser = allTodayUsers[0];
-                    const mainUserName = `${mainUser.surname} ${mainUser.name ? mainUser.name.charAt(0) + '.' : ''}${mainUser.middle_name ? mainUser.middle_name.charAt(0) + '.' : ''}`;
-                    
-                    console.log('Main birthday user:', mainUserName);
-                    
-                    document.getElementById('birthdayName').textContent = mainUserName;
-                    
                     // Создаем карточки для карусели
                     allTodayUsers.forEach((user, index) => {
                         const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
@@ -236,28 +218,18 @@
                     // Инициализируем карусель для сегодня
                     initializeCarousel('today', allTodayUsers.length);
                     
-                    // Показываем карусель и панель
+                    // Показываем карусель
                     const todayCarousel = document.getElementById('today-carousel');
-                    const birthdayPanel = document.querySelector('.birthday-panel');
-                    
                     if (todayCarousel) {
                         todayCarousel.style.display = 'block';
-                    }
-                    if (birthdayPanel) {
-                        birthdayPanel.style.display = 'block';
-                        console.log('Showing birthday panel -', allTodayUsers.length, 'users');
+                        console.log('Showing today carousel -', allTodayUsers.length, 'users');
                     }
                 } else {
-                    // Скрываем карусель и панель если нет именинников
+                    // Скрываем карусель если нет именинников
                     const todayCarousel = document.getElementById('today-carousel');
-                    const birthdayPanel = document.querySelector('.birthday-panel');
-                    
                     if (todayCarousel) {
                         todayCarousel.style.display = 'none';
-                    }
-                    if (birthdayPanel) {
-                        birthdayPanel.style.display = 'none';
-                        console.log('Hiding birthday panel - no users');
+                        console.log('Hiding today carousel - no users');
                     }
                     
                     // Добавляем сообщение об отсутствии именинников
