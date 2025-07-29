@@ -808,6 +808,7 @@ additional-info {
 }
 
 .form-group input[type="text"],
+.form-group input[type="email"],
 .form-group input[type="password"] {
     width: 100%;
     padding: 12px;
@@ -818,6 +819,7 @@ additional-info {
 }
 
 input[type="text"],
+input[type="email"],
 input[type="password"] {
     background-color: #f9f9f9;
     border: 1px solid #ccc;
