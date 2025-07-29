@@ -7,12 +7,12 @@ package main
 // @BasePath /
 
 import (
-	_ "telephone-book/docs" // swagger docs
 	"context"
 	stdlog "log"
 	"log/slog"
 	"net/http"
 	"os"
+	_ "telephone-book/docs" // swagger docs
 	sso "telephone-book/internal/clients/sso/grpc"
 	"telephone-book/internal/config"
 	"telephone-book/internal/http_server/handlers/auth/login"
@@ -107,7 +107,9 @@ func main() {
 	//Работники
 	router.Route("/workers", func(r chi.Router) {
 		r.Post("/", workers.Create(ctx, log, storage))
-		r.Get("/", workers.GetByEmail(ctx, log, storage))
+		r.Post("/with-photo", workers.CreateWithPhoto(ctx, log, storage))
+		r.Get("/{email}", workers.GetByEmail(ctx, log, storage))
+		r.Get("/{email}/photo", workers.GetPhoto(ctx, log, storage))
 		r.Put("/", workers.Update(ctx, log, storage))
 		r.Delete("/", workers.Delete(ctx, log, storage))
 		r.Post("/all", workers.GetAll(ctx, log, storage))

@@ -184,12 +184,11 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		return models.EmptyUser, err
 	}
 
-	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section, birth_date, description, photo
+	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section, birth_date, description
 		FROM workers WHERE email = $1`
 
 	var user models.User
 	var middleName, cabinet, position, department, section, description sql.NullString
-	var photo []byte // photo может быть NULL, но мы обработаем это отдельно
 
 	err := s.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
@@ -204,7 +203,6 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		&section,
 		&user.BirthDate,
 		&description,
-		&photo,
 	)
 
 	if err != nil {
@@ -221,7 +219,6 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 	user.Department = department.String
 	user.Section = section.String
 	user.Description = description.String
-	user.Photo = photo
 
 	return user, nil
 }
@@ -294,4 +291,26 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	}
 
 	return users, nil
+}
+
+// GetUserPhoto получает только фотографию пользователя
+func (s *Storage) GetUserPhoto(ctx context.Context, institute string, email string) ([]byte, error) {
+	const op = "storage.postgresql.GetUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return nil, err
+	}
+
+	query := `SELECT photo FROM workers WHERE email = $1`
+
+	var photo []byte
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&photo)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, storage.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return photo, nil
 }

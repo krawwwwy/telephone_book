@@ -79,13 +79,17 @@
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
             <h2>Редактировать контакт</h2>
             <form id="editForm">
-                <input type="text" id="editName" placeholder="ФИО" required>
-                <input type="text" id="editPosition" placeholder="Должность" required>
-                <input type="text" id="editDepartment" placeholder="Отдел" required>
+                <input type="text" id="editSurname" placeholder="Фамилия" required>
+                <input type="text" id="editName" placeholder="Имя" required>
+                <input type="text" id="editMiddleName" placeholder="Отчество">
+                <input type="text" id="editPosition" placeholder="Должность">
+                <input type="text" id="editDepartment" placeholder="Отдел">
+                <input type="text" id="editSection" placeholder="Подотдел">
+                <input type="text" id="editCabinet" placeholder="Кабинет">
                 <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
-                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
                 <input type="email" id="editEmail" placeholder="Email" required>
-                <input type="text" id="editBirthday" placeholder="Дата рождения">
+                <input type="date" id="editBirthday" placeholder="Дата рождения">
+                <textarea id="editDescription" placeholder="Описание" rows="3"></textarea>
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Сохранить</button>
@@ -138,6 +142,9 @@
         // Получаем email из URL
         const urlParams = new URLSearchParams(window.location.search);
         const email = urlParams.get('email');
+        console.log(`[DEBUG] Extracted email from URL: '${email}'`);
+        let currentInstitute = '';
+        let currentUser = null;
         
         // Загрузка данных пользователя
         async function loadUserData() {
@@ -153,11 +160,15 @@
                 
                 for (const institute of ['giredmet', 'grafit']) {
                     try {
-                        const response = await fetch(`${API_BASE}/workers/?email=${encodeURIComponent(email)}&institute=${institute}`);
+                        const requestUrl = `${API_BASE}/workers/${encodeURIComponent(email)}?institute=${institute}`;
+                        console.log(`[DEBUG] Making request to: ${requestUrl}`);
+                        const response = await fetch(requestUrl);
                         const data = await response.json();
                         
                         if (data.status === 'Ok' && data.user) {
                             userData = data.user;
+                            currentInstitute = institute;
+                            currentUser = userData;
                             break;
                         }
                     } catch (err) {
@@ -167,21 +178,47 @@
                 
                 if (userData) {
                     // Заполняем данные на странице
-                    document.getElementById('fullName').textContent = userData.name || 'Не указано';
+                    const fullName = `${userData.surname || ''} ${userData.name || ''} ${userData.middle_name || ''}`.trim();
+                    document.getElementById('fullName').textContent = fullName || 'Не указано';
                     document.getElementById('position').textContent = userData.position || 'Не указано';
                     document.getElementById('department').textContent = userData.department || 'Не указано';
                     document.getElementById('sub').textContent = userData.section || 'Не указано';
                     document.getElementById('cab').textContent = userData.cabinet || 'Не указано';
-                    document.getElementById('workPhone').textContent = userData.phone || 'Не указано';
-                    document.getElementById('personalPhone').textContent = userData.personal_phone || 'Не указано';
+                    document.getElementById('workPhone').textContent = userData.phone_number || 'Не указано';
+                    
+                    // Убираем личный телефон так как его нет в модели
+                    const personalPhoneRow = document.getElementById('personalPhone').closest('p');
+                    if (personalPhoneRow) {
+                        personalPhoneRow.style.display = 'none';
+                    }
+                    
                     document.getElementById('email').textContent = userData.email || 'Не указано';
-                    document.getElementById('birthday').textContent = userData.birthday || 'Не указано';
+                    
+                    // Форматируем дату рождения
+                    if (userData.birth_date && userData.birth_date !== '0001-01-01T00:00:00Z') {
+                        const birthDate = new Date(userData.birth_date);
+                        const options = { day: 'numeric', month: 'long' };
+                        document.getElementById('birthday').textContent = birthDate.toLocaleDateString('ru-RU', options);
+                    } else {
+                        document.getElementById('birthday').textContent = 'Не указано';
+                    }
                     
                     // Обновляем описание если есть
                     const descriptionElement = document.querySelector('.profile-description p');
-                    if (descriptionElement && userData.description) {
-                        descriptionElement.textContent = userData.description;
+                    if (descriptionElement) {
+                        if (userData.description) {
+                            descriptionElement.textContent = userData.description;
+                        } else {
+                            descriptionElement.textContent = 'Описание не добавлено.';
+                        }
                     }
+                    
+                    // Загружаем фотографию
+                    loadUserPhoto(email, currentInstitute);
+                    
+                    // Обновляем breadcrumbs
+                    updateBreadcrumbs(userData);
+                    
                 } else {
                     alert('Пользователь не найден');
                     window.location.href = 'index.html';
@@ -192,12 +229,137 @@
             }
         }
         
+        // Загрузка фотографии пользователя
+        async function loadUserPhoto(email, institute) {
+            try {
+                const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
+                const response = await fetch(photoUrl);
+                
+                if (response.ok) {
+                    const profileImage = document.getElementById('profileImage');
+                    profileImage.src = photoUrl;
+                    profileImage.onerror = function() {
+                        // Если фото не загружается, показываем placeholder
+                        this.src = 'images/person.jpg';
+                    };
+                } else {
+                    // Если фото нет, используем placeholder
+                    document.getElementById('profileImage').src = 'images/person.jpg';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки фотографии:', error);
+                document.getElementById('profileImage').src = 'images/person.jpg';
+            }
+        }
+        
+        // Обновление breadcrumbs
+        function updateBreadcrumbs(userData) {
+            const breadcrumbs = document.getElementById('breadcrumbs');
+            const institute = currentInstitute === 'giredmet' ? 'ГИРЕДМЕТ' : 'ГРАФИТ';
+            const institutePage = currentInstitute === 'giredmet' ? 'division.html?division=giredmet' : 'division.html?division=grafit';
+            
+            breadcrumbs.innerHTML = `
+                <a href="index.html">Главная</a> → 
+                <a href="${institutePage}">${institute}</a> → 
+                <a href="departments.html?division=${currentInstitute}&department=${encodeURIComponent(userData.department || '')}">${userData.department || 'Отдел'}</a> → 
+                <span>${userData.surname} ${userData.name}</span>
+            `;
+        }
+        
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadUserData();
+            
+            // Добавляем обработчик формы редактирования
+            document.getElementById('editForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveUserChanges();
+            });
         });
 
+        // Сохранение изменений пользователя
+        async function saveUserChanges() {
+            if (!currentUser || !currentInstitute) return;
+            
+            try {
+                // Собираем данные из формы
+                const formData = {
+                    institute: currentInstitute,
+                    old_email: currentUser.email,
+                    surname: document.getElementById('editSurname').value.trim(),
+                    name: document.getElementById('editName').value.trim(),
+                    middle_name: document.getElementById('editMiddleName').value.trim(),
+                    email: document.getElementById('editEmail').value.trim(),
+                    phone_number: document.getElementById('editWorkPhone').value.trim(),
+                    cabinet: document.getElementById('editCabinet').value.trim(),
+                    position: document.getElementById('editPosition').value.trim(),
+                    department: document.getElementById('editDepartment').value.trim(),
+                    section: document.getElementById('editSection').value.trim(),
+                    description: document.getElementById('editDescription').value.trim()
+                };
+                
+                // Добавляем дату рождения если указана
+                const birthDate = document.getElementById('editBirthday').value;
+                if (birthDate) {
+                    formData.birth_date = new Date(birthDate).toISOString();
+                }
+                
+                console.log('Отправляем данные для обновления:', formData);
+                
+                const response = await fetch(`${API_BASE}/workers`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+                
+                if (result.status === 'Ok') {
+                    alert('Контакт успешно обновлен');
+                    closeEditModal();
+                    
+                    // Если email изменился, перенаправляем на новый URL
+                    if (formData.email !== currentUser.email) {
+                        window.location.href = `contact.html?email=${encodeURIComponent(formData.email)}`;
+                    } else {
+                        // Перезагружаем данные
+                        loadUserData();
+                    }
+                } else {
+                    alert('Ошибка при обновлении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении контакта:', error);
+                alert('Ошибка при обновлении контакта: ' + error.message);
+            }
+        }
+
         function openEditModal() {
+            if (!currentUser) return;
+            
+            // Заполняем форму редактирования текущими данными
+            document.getElementById('editSurname').value = currentUser.surname || '';
+            document.getElementById('editName').value = currentUser.name || '';
+            document.getElementById('editMiddleName').value = currentUser.middle_name || '';
+            document.getElementById('editPosition').value = currentUser.position || '';
+            document.getElementById('editDepartment').value = currentUser.department || '';
+            document.getElementById('editSection').value = currentUser.section || '';
+            document.getElementById('editCabinet').value = currentUser.cabinet || '';
+            document.getElementById('editWorkPhone').value = currentUser.phone_number || '';
+            document.getElementById('editEmail').value = currentUser.email || '';
+            
+            if (currentUser.birth_date && currentUser.birth_date !== '0001-01-01T00:00:00Z') {
+                const birthDate = new Date(currentUser.birth_date);
+                const formattedDate = birthDate.toISOString().split('T')[0];
+                document.getElementById('editBirthday').value = formattedDate;
+            }
+            
+            document.getElementById('editDescription').value = currentUser.description || '';
+            
             document.getElementById("editModal").style.display = "flex";
         }
 
@@ -205,17 +367,102 @@
             document.getElementById("editModal").style.display = "none";
         }
 
-        function deleteContact() {
-            if (confirm('Вы уверены, что хотите удалить этот контакт?')) {
-                // Реализация удаления контакта
-                alert('Контакт удален');
-                window.location.href = 'index.html';
-            }
+        function openDeleteContactModal() {
+            if (!currentUser) return;
+            
+            const confirmText = document.getElementById('deleteConfirmText');
+            const fullName = `${currentUser.surname || ''} ${currentUser.name || ''}`.trim();
+            confirmText.textContent = `Вы уверены, что хотите удалить контакт "${fullName}"?`;
+            
+            document.getElementById("deleteContactModal").style.display = "flex";
         }
+
+        function closeDeleteContactModal() {
+            document.getElementById("deleteContactModal").style.display = "none";
+        }
+
+        async function confirmDeleteContact() {
+            if (!currentUser || !currentInstitute) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers?email=${encodeURIComponent(currentUser.email)}&institute=${currentInstitute}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Контакт успешно удален');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Ошибка при удалении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении контакта:', error);
+                alert('Ошибка при удалении контакта');
+            }
+            
+            closeDeleteContactModal();
+        }
+
+        function openPhotoUpload() {
+            document.getElementById('photoInput').click();
+        }
+
+        function openPhotoDeleteModal() {
+            document.getElementById("deletePhotoModal").style.display = "flex";
+        }
+
+        function closePhotoDeleteModal() {
+            document.getElementById("deletePhotoModal").style.display = "none";
+        }
+
+        function confirmPhotoDelete() {
+            // Реализация удаления фото будет добавлена позже
+            alert('Функция удаления фото будет реализована в следующих версиях');
+            closePhotoDeleteModal();
+        }
+
+        // Обработка загрузки фото
+        document.getElementById('photoInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Проверяем размер файла (5 МБ)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Размер фотографии не должен превышать 5 МБ');
+                    return;
+                }
+                
+                // Проверяем тип файла
+                if (!file.type.startsWith('image/')) {
+                    alert('Пожалуйста, выберите файл изображения');
+                    return;
+                }
+                
+                // Показываем превью
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profileImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                
+                // Здесь можно добавить загрузку на сервер
+                alert('Функция загрузки фото будет реализована в следующих версиях');
+            }
+        });
 
         window.onclick = function (event) {
             if (event.target === document.getElementById("editModal")) {
                 closeEditModal();
+            }
+            if (event.target === document.getElementById("deleteContactModal")) {
+                closeDeleteContactModal();
+            }
+            if (event.target === document.getElementById("deletePhotoModal")) {
+                closePhotoDeleteModal();
             }
         };
 

@@ -283,7 +283,17 @@
                         
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${fullName}</a></td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(division)}" 
+                                         alt="Фото" class="contact-photo" 
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="contact-photo-placeholder" style="display: none;">
+                                        ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${fullName}</a>
+                                </div>
+                            </td>
                             <td>${user.phone_number || ''}</td>
                             <td>${user.cabinet || ''}</td>
                             <td>${user.email || ''}</td>
@@ -526,41 +536,48 @@
                         return;
                     }
                     
-                    // Форматируем дату рождения в ISO формат
+                    // Создаем FormData для отправки файла
+                    const formData = new FormData();
+                    formData.append('institute', division);
+                    formData.append('surname', surname);
+                    formData.append('name', name);
+                    formData.append('middle_name', document.getElementById('middleName').value.trim() || '');
+                    formData.append('email', email);
+                    formData.append('phone_number', phoneNumber);
+                    formData.append('cabinet', document.getElementById('cabinet').value.trim() || '');
+                    formData.append('position', document.getElementById('position').value.trim() || '');
+                    formData.append('department', document.getElementById('department').value.trim() || department || '');
+                    formData.append('section', document.getElementById('section').value.trim() || section || '');
+                    formData.append('description', document.getElementById('description').value.trim() || '');
+                    
+                    // Форматируем дату рождения
                     let birthDate = document.getElementById('birthDate').value;
                     if (birthDate) {
-                        birthDate = new Date(birthDate).toISOString();
+                        formData.append('birth_date', birthDate);
                     }
                     
-                    const workerData = {
-                        institute: division,
-                        surname: surname,
-                        name: name,
-                        middle_name: document.getElementById('middleName').value.trim() || '',
-                        email: email,
-                        phone_number: phoneNumber,
-                        cabinet: document.getElementById('cabinet').value.trim() || '',
-                        position: document.getElementById('position').value.trim() || '',
-                        department: document.getElementById('department').value.trim() || department || '',
-                        section: document.getElementById('section').value.trim() || section || '',
-                        description: document.getElementById('description').value.trim() || ''
-                    };
-                    
-                    // Добавляем дату рождения только если она указана
-                    if (birthDate) {
-                        workerData.birth_date = birthDate;
+                    // Добавляем фотографию если выбрана
+                    const photoInput = document.getElementById('contactPhoto');
+                    if (photoInput.files.length > 0) {
+                        const file = photoInput.files[0];
+                        // Проверяем размер файла (5 МБ)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('Размер фотографии не должен превышать 5 МБ');
+                            return;
+                        }
+                        formData.append('photo', file);
                     }
                     
-                    console.log('Отправляем данные:', workerData);
+                    console.log('Отправляем данные с фотографией');
                     
                     try {
-                        const response = await fetch(`${API_BASE}/workers`, {
+                        const response = await fetch(`${API_BASE}/workers/with-photo`, {
                             method: 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                // НЕ устанавливаем Content-Type для FormData - браузер сделает это автоматически
                             },
-                            body: JSON.stringify(workerData)
+                            body: formData
                         });
                         
                         const result = await response.json();
@@ -571,6 +588,7 @@
                             closeAddContactModal();
                             loadWorkers();
                             e.target.reset();
+                            removePhotoPreview(); // Очищаем превью фотографии
                         } else {
                             alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
                         }
@@ -703,7 +721,17 @@
                                         
                                         const row = document.createElement('tr');
                                         row.innerHTML = `
-                                            <td><a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link">${fullName}</a></td>
+                                            <td>
+                                                <div style="display: flex; align-items: center;">
+                                                    <img src="${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(division)}" 
+                                                         alt="Фото" class="contact-photo" 
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div class="contact-photo-placeholder" style="display: none;">
+                                                        ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
+                                                    </div>
+                                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${fullName}</a>
+                                                </div>
+                                            </td>
                                             <td>${user.phone_number || ''}</td>
                                             <td>${user.cabinet || ''}</td>
                                             <td>${user.email || ''}</td>
@@ -763,6 +791,53 @@
         };
         });
 
+        // Функции для работы с фотографиями
+        function setupPhotoPreview() {
+            const photoInput = document.getElementById('contactPhoto');
+            if (photoInput) {
+                photoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Проверяем размер файла
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('Размер фотографии не должен превышать 5 МБ');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Проверяем тип файла
+                        if (!file.type.startsWith('image/')) {
+                            alert('Пожалуйста, выберите файл изображения');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Показываем превью
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewDiv = document.getElementById('photoPreview');
+                            const previewImg = document.getElementById('previewImage');
+                            
+                            previewImg.src = e.target.result;
+                            previewDiv.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+        
+        function removePhotoPreview() {
+            const photoInput = document.getElementById('contactPhoto');
+            const previewDiv = document.getElementById('photoPreview');
+            
+            if (photoInput) photoInput.value = '';
+            if (previewDiv) previewDiv.style.display = 'none';
+        }
+
+        // Инициализируем превью фотографии
+        setupPhotoPreview();
+
     </script>
 
 
@@ -783,6 +858,17 @@
                 <input type="text" placeholder="Подотдел (необязательно)" id="section">
                 <input type="date" placeholder="Дата рождения (необязательно)" id="birthDate">
                 <input type="text" placeholder="Описание (необязательно)" id="description">
+                <div class="file-upload-wrapper">
+                    <label for="contactPhoto" class="file-upload-label">
+                        <span class="file-upload-text">Загрузить фотографию (необязательно)</span>
+                        <span class="file-upload-hint">Максимум 5 МБ, форматы: JPG, PNG, GIF, WebP</span>
+                    </label>
+                    <input type="file" id="contactPhoto" accept="image/*" class="file-upload-input">
+                    <div class="photo-preview" id="photoPreview" style="display: none;">
+                        <img id="previewImage" alt="Предпросмотр фотографии">
+                        <button type="button" class="remove-photo-btn" onclick="removePhotoPreview()">&times;</button>
+                    </div>
+                </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeAddContactModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Добавить</button>
