@@ -110,6 +110,8 @@ func main() {
 		r.Post("/with-photo", workers.CreateWithPhoto(ctx, log, storage))
 		r.Get("/{email}", workers.GetByEmail(ctx, log, storage))
 		r.Get("/{email}/photo", workers.GetPhoto(ctx, log, storage))
+		r.Put("/{email}/photo", workers.UpdatePhoto(ctx, log, storage))
+		r.Delete("/{email}/photo", workers.DeletePhoto(ctx, log, storage))
 		r.Put("/", workers.Update(ctx, log, storage))
 		r.Delete("/", workers.Delete(ctx, log, storage))
 		r.Post("/all", workers.GetAll(ctx, log, storage))

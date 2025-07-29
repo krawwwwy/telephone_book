@@ -314,3 +314,57 @@ func (s *Storage) GetUserPhoto(ctx context.Context, institute string, email stri
 
 	return photo, nil
 }
+
+// UpdateUserPhoto обновляет фотографию пользователя
+func (s *Storage) UpdateUserPhoto(ctx context.Context, institute string, email string, photo []byte) error {
+	const op = "storage.postgresql.UpdateUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
+	}
+
+	query := `UPDATE workers SET photo = $1 WHERE email = $2`
+
+	result, err := s.db.ExecContext(ctx, query, photo, email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return storage.ErrUserNotFound
+	}
+
+	return nil
+}
+
+// DeleteUserPhoto удаляет фотографию пользователя
+func (s *Storage) DeleteUserPhoto(ctx context.Context, institute string, email string) error {
+	const op = "storage.postgresql.DeleteUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
+	}
+
+	query := `UPDATE workers SET photo = NULL WHERE email = $1`
+
+	result, err := s.db.ExecContext(ctx, query, email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return storage.ErrUserNotFound
+	}
+
+	return nil
+}
