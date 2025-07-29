@@ -158,6 +158,12 @@
     <script>
         const API_BASE = 'http://localhost:8080';
 
+        // Переменные для редактирования и удаления отделов
+        let currentEditingDepartment = null;
+        let currentEditingInstitute = null;
+        let currentDeletingDepartment = null;
+        let currentDeletingInstitute = null;
+
         // Функции для работы с модальными окнами
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'flex';
@@ -165,9 +171,19 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-            // Очищаем форму при закрытии
+            // Очищаем формы при закрытии
             if (modalId === 'addDepartmentModal') {
                 clearDepartmentForm();
+            } else if (modalId === 'editDepartmentModal') {
+                // Очищаем переменные редактирования
+                currentEditingDepartment = null;
+                currentEditingInstitute = null;
+                document.getElementById('editDeptName').value = '';
+                document.getElementById('editSubdepartmentsList').innerHTML = '';
+            } else if (modalId === 'deleteDepartmentModal') {
+                // Очищаем переменные удаления
+                currentDeletingDepartment = null;
+                currentDeletingInstitute = null;
             }
         }
 
@@ -291,11 +307,27 @@
                 departmentsList.innerHTML = '';
                 
                 if (data.status === 'Ok' && data.departments) {
-                    data.departments.forEach(dept => {
+                    data.departments.forEach(async dept => {
                         const deptDiv = document.createElement('div');
                         deptDiv.className = 'department-item admin-dept-item';
+                        
+                        // Загружаем информацию о подотделах
+                        let sectionsInfo = '';
+                        try {
+                            const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                            const sectionsData = await sectionsResponse.json();
+                            if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                                const sectionsCount = sectionsData.sections.length;
+                                sectionsInfo = sectionsCount > 0 ? ` (${sectionsCount} подотдел${sectionsCount === 1 ? '' : sectionsCount < 5 ? 'а' : 'ов'})` : '';
+                            }
+                        } catch (error) {
+                            console.log('Не удалось загрузить информацию о подотделах для', dept.name);
+                        }
+                        
                         deptDiv.innerHTML = `
-                            <div class="dept-name">${dept.name}</div>
+                            <div class="dept-info">
+                                <div class="dept-name">${dept.name}${sectionsInfo}</div>
+                            </div>
                             <div class="dept-actions">
                                 <button class="edit-btn" onclick="editDepartment('${dept.name}', '${institute}')">Редактировать</button>
                                 <button class="delete-btn" onclick="deleteDepartment('${dept.name}', '${institute}')">Удалить</button>
@@ -353,6 +385,13 @@
             try {
                 const institutes = ['giredmet', 'grafit'];
                 const tbody = document.querySelector('.admin-table tbody');
+                
+                // Проверяем, существует ли таблица пользователей
+                if (!tbody) {
+                    console.log('Таблица пользователей не найдена в админ-панели - пропускаем загрузку');
+                    return;
+                }
+                
                 tbody.innerHTML = '';
                 
                 for (const institute of institutes) {
@@ -418,63 +457,60 @@
         }
 
         // Поиск пользователей
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value.toLowerCase();
-            const rows = document.querySelectorAll('.admin-table tbody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
+        const searchElement = document.getElementById('search');
+        if (searchElement) {
+            searchElement.addEventListener('input', function () {
+                const query = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.admin-table tbody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(query) ? '' : 'none';
+                });
             });
-        });
+        }
 
         // Обработка импорта файла
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const institute = document.getElementById('instituteSelect').value;
-            formData.append('institute', institute);
-            
-            try {
-                const response = await fetch(`${API_BASE}/workers/import`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                    },
-                    body: formData
-                });
-                const result = await response.json();
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const institute = document.getElementById('instituteSelect').value;
+                formData.append('institute', institute);
                 
-                if (result.status === 'Ok') {
-                    alert('Импорт завершён успешно');
-                    loadAllUsers(); // Перезагружаем список
-                } else {
-                    alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                try {
+                    const response = await fetch(`${API_BASE}/workers/import`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        },
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.status === 'Ok') {
+                        alert('Импорт завершён успешно');
+                        loadAllUsers(); // Перезагружаем список
+                    } else {
+                        alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (err) {
+                    alert('Ошибка при импорте файла');
+                    console.error(err);
                 }
-            } catch (err) {
-                alert('Ошибка при импорте файла');
-                console.error(err);
-            }
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function () {
-            const fileNameSpan = document.getElementById('fileName');
-            fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
-        });
-
-        function openImportModal() {
-            document.getElementById("importModal").style.display = "flex";
+            });
         }
 
-        function closeImportModal() {
-            document.getElementById("importModal").style.display = "none";
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
+                const fileNameSpan = document.getElementById('fileName');
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
+                }
+            });
         }
-
-        window.onclick = function (event) {
-            if (event.target === document.getElementById("importModal")) {
-                closeImportModal();
-            }
-        };
 
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
@@ -522,15 +558,154 @@
             }
         }
 
-        // Заглушки для редактирования и удаления отделов
-        function editDepartment(name, institute) {
-            alert(`Редактирование отдела "${name}" в институте "${institute}" (функция в разработке)`);
+        // Редактирование отдела
+        async function editDepartment(name, institute) {
+            currentEditingDepartment = name;
+            currentEditingInstitute = institute;
+            
+            try {
+                // Загружаем данные отдела (секции)
+                const response = await fetch(`${API_BASE}/departments/${encodeURIComponent(name)}?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                // Заполняем форму
+                document.getElementById('editDeptName').value = name;
+                
+                // Очищаем список секций и добавляем существующие
+                const editSubdepartmentsList = document.getElementById('editSubdepartmentsList');
+                editSubdepartmentsList.innerHTML = '';
+                
+                if (data.status === 'Ok' && data.sections) {
+                    data.sections.forEach(section => {
+                        const subdepartmentDiv = document.createElement('div');
+                        subdepartmentDiv.className = 'subdepartment-field';
+                        subdepartmentDiv.innerHTML = `
+                            <input type="text" placeholder="Название подотдела" class="form-input subdepartment-input" value="${section.name}">
+                            <button type="button" class="remove-subdepartment-btn" onclick="removeSubdepartmentField(this)">
+                                <span>−</span> Удалить
+                            </button>
+                        `;
+                        editSubdepartmentsList.appendChild(subdepartmentDiv);
+                    });
+                }
+                
+                openModal('editDepartmentModal');
+            } catch (error) {
+                console.error('Ошибка загрузки данных отдела:', error);
+                alert('Ошибка загрузки данных отдела');
+            }
         }
 
-        function deleteDepartment(name, institute) {
-            if (confirm(`Вы уверены, что хотите удалить отдел "${name}"?`)) {
-                alert(`Удаление отдела "${name}" (функция в разработке)`);
+        // Сохранение изменений отдела
+        async function saveDepartmentChanges() {
+            if (!currentEditingDepartment || !currentEditingInstitute) {
+                alert('Ошибка: данные отдела не загружены');
+                return;
             }
+
+            const newName = document.getElementById('editDeptName').value.trim();
+            if (!newName) {
+                alert('Пожалуйста, введите название отдела');
+                return;
+            }
+
+            // Собираем подотделы
+            const subdepartmentInputs = document.querySelectorAll('#editSubdepartmentsList .subdepartment-input');
+            const sections = Array.from(subdepartmentInputs)
+                .map(input => input.value.trim())
+                .filter(value => value.length > 0);
+
+            const requestData = {
+                name: newName,
+                sections: sections
+            };
+
+            console.log('Отправляем данные для обновления отдела:', requestData);
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования отдела необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(currentEditingInstitute)}&department=${encodeURIComponent(currentEditingDepartment)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно обновлен');
+                    closeModal('editDepartmentModal');
+                    // Перезагружаем список отделов
+                    loadDepartments(currentEditingInstitute);
+                } else {
+                    alert('Ошибка при обновлении отдела: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении отдела:', error);
+                alert('Ошибка при обновлении отдела: ' + error.message);
+            }
+        }
+
+        // Удаление отдела
+        function deleteDepartment(name, institute) {
+            currentDeletingDepartment = name;
+            currentDeletingInstitute = institute;
+            
+            // Обновляем текст подтверждения
+            document.getElementById('deptNameToDelete').textContent = name;
+            
+            openModal('deleteDepartmentModal');
+        }
+
+        // Подтверждение удаления отдела
+        async function confirmDepartmentDeletion() {
+            if (!currentDeletingDepartment || !currentDeletingInstitute) {
+                alert('Ошибка: данные отдела не загружены');
+                return;
+            }
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления отдела необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(currentDeletingInstitute)}&department=${encodeURIComponent(currentDeletingDepartment)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно удален');
+                    closeModal('deleteDepartmentModal');
+                    // Перезагружаем список отделов
+                    loadDepartments(currentDeletingInstitute);
+                } else {
+                    alert('Ошибка при удалении отдела: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении отдела:', error);
+                alert('Ошибка при удалении отдела: ' + error.message);
+            }
+
+            // Очищаем переменные
+            currentDeletingDepartment = null;
+            currentDeletingInstitute = null;
         }
 
     </script>
