@@ -420,6 +420,9 @@
             switchDivision(division);
             loadAllWorkers();
             paginateTable();
+            
+            // Обновляем header при загрузке страницы
+            updateHeaderButtons();
 
             // Обработка формы добавления контакта
             const contactForm = document.getElementById('contactForm');
@@ -777,6 +780,103 @@
 
         // Инициализируем превью фотографии
         setupPhotoPreview();
+
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.email) {
+                    return {
+                        email: data.email,
+                        role: data.role
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                return null;
+            }
+        }
+
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = 'Гость';
+                        }
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            <a href="admin.html" class="btn-primary">Админ-панель</a>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <a href="admin.html" class="btn-primary">Админ-панель</a>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error updating header with user info:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <a href="admin.html" class="btn-primary">Админ-панель</a>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <a href="admin.html" class="btn-primary">Админ-панель</a>
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
 
     </script>
 
