@@ -177,8 +177,8 @@
                     
                     console.log('Сотрудники добавлены в таблицу');
                     
-                    // Настраиваем обработчики для кнопок редактирования и удаления
-                    setupActionButtons();
+                    // Настраиваем пагинацию
+                    paginateTable();
                 } else {
                     console.error('Ошибка загрузки всех сотрудников:', data.error);
                     if (tbody) {
@@ -349,23 +349,6 @@
             document.getElementById(`link-${name}`).classList.add('active-division');
         }
 
-        // Настройка обработчиков для кнопок действий
-        function setupActionButtons() {
-            document.querySelectorAll('.actions-cell').forEach(cell => {
-                const tr = cell.parentElement;
-
-                const btnEdit = cell.querySelector('.icon-edit');
-                if (btnEdit) {
-                btnEdit.addEventListener('click', () => openEditFromTable(tr));
-                }
-
-                const btnDelete = cell.querySelector('.icon-delete');
-                if (btnDelete) {
-                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
-                }
-            });
-        }
-
         // Загрузка breadcrumbs
         function loadBreadcrumbs() {
             const breadcrumbs = document.getElementById('breadcrumbs');
@@ -411,50 +394,6 @@
         }
 
         let contactRowToDelete = null;
-
-        function openEditFromTable(row) {
-            const fullName = row.querySelector('.fio-link').innerText;
-            const position = row.cells[4].innerText;
-            const department = row.cells[5].innerText;
-            const email = row.cells[3].innerText;
-            const workPhone = row.cells[1].innerText;
-            const room = row.cells[2].innerText;
-
-            document.getElementById('editName').value = fullName;
-            document.getElementById('editPosition').value = position;
-            document.getElementById('editDepartment').value = department;
-            document.getElementById('editEmail').value = email;
-            document.getElementById('editWorkPhone').value = workPhone;
-            document.getElementById('editBirthday').value = '';
-            document.getElementById('editPersonalPhone').value = '';
-
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        function openDeleteFromTable(row) {
-            contactRowToDelete = row;
-            const name = row.querySelector('.fio-link').innerText;
-            const el = document.getElementById('deleteConfirmText');
-            el.innerText = `Удалить контакт "${name}"?`;
-            el.classList.add('modal-subtitle');
-            document.getElementById('deleteContactModal').style.display = 'flex';
-        }
-
-        function closeDeleteContactModal() {
-            document.getElementById('deleteContactModal').style.display = 'none';
-        }
-
-        function confirmDeleteContact() {
-            if (contactRowToDelete) {
-                contactRowToDelete.remove();
-                contactRowToDelete = null;
-            }
-            closeDeleteContactModal();
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
 
         function openAddDepartmentModal() {
             document.getElementById("addDepartmentModal").style.display = "flex";
@@ -747,7 +686,8 @@
                                         tbody.appendChild(row);
                                     });
                                     
-                                    setupActionButtons();
+                                    // Настраиваем пагинацию
+                                    paginateTable();
                                 } else {
                                     // Показываем сообщение о том, что работников не найдено
                                     const row = document.createElement('tr');
@@ -907,53 +847,6 @@
         </div>
     </div>
 
-    <div id="deleteContactModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeDeleteContactModal()">&times;</span>
-            <h2>Удаление контакта</h2>
-            <p id="deleteConfirmText">Вы уверены, что хотите удалить этот контакт?</p>
-            <div class="modal-buttons">
-                <button class="cancel-btn" onclick="closeDeleteContactModal()">Отмена</button>
-                <button class="submit-btn" onclick="confirmDeleteContact()">Удалить</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeEditModal()">&times;</span>
-            <h2>Редактировать контакт</h2>
-            <form id="editForm">
-                <input type="text" id="editName" placeholder="ФИО" required>
-                <input type="text" id="editPosition" placeholder="Должность" required>
-                <input type="text" id="editDepartment" placeholder="Отдел" required>
-                <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
-                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
-                <input type="email" id="editEmail" placeholder="Email" required>
-                <input type="text" id="editBirthday" placeholder="Дата рождения">
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Сохранить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="addDepartmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
-            <h2>Добавление отдела</h2>
-            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
-            <form id="departmentForm">
-                <input type="text" placeholder="Название отдела" required>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Модальное окно редактирования пользователя -->
     <div id="editUserModal" class="modal">
         <div class="modal-content">
@@ -974,6 +867,21 @@
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeEditUserModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addDepartmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
+            <h2>Добавление отдела</h2>
+            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
+            <form id="departmentForm">
+                <input type="text" placeholder="Название отдела" required>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Добавить</button>
                 </div>
             </form>
         </div>
