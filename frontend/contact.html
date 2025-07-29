@@ -156,6 +156,7 @@
         console.log(`[DEBUG] Extracted email from URL: '${email}'`);
         let currentInstitute = '';
         let currentUser = null;
+        let currentHasPhoto = false;
         
         // Загрузка данных пользователя
         async function loadUserData() {
@@ -253,13 +254,111 @@
                         // Если фото не загружается, показываем placeholder
                         this.src = 'images/person.jpg';
                     };
+                    
+                    // Обновляем отображение кнопок для случая, когда фото есть
+                    updatePhotoButtons(true);
                 } else {
                     // Если фото нет, используем placeholder
                     document.getElementById('profileImage').src = 'images/person.jpg';
+                    
+                    // Обновляем отображение кнопок для случая, когда фото нет
+                    updatePhotoButtons(false);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки фотографии:', error);
                 document.getElementById('profileImage').src = 'images/person.jpg';
+                updatePhotoButtons(false);
+            }
+        }
+
+        // Обновление отображения кнопок в зависимости от наличия фото и роли пользователя
+        async function updatePhotoButtons(hasPhoto) {
+            currentHasPhoto = hasPhoto;
+            const photoActions = document.querySelector('.photo-actions');
+            const authToken = localStorage.getItem('authToken');
+            
+            if (!authToken) {
+                // Если нет токена, скрываем все кнопки
+                photoActions.style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Проверяем роль пользователя
+                const userRole = await getUserRole();
+                
+                photoActions.innerHTML = '';
+                
+                if (!hasPhoto) {
+                    // Если фото нет, авторизованные пользователи могут загрузить
+                    photoActions.innerHTML = `
+                        <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                        <input type="file" id="photoInput" style="display: none">
+                    `;
+                } else {
+                    // Если фото есть, показываем кнопки в зависимости от роли
+                    if (userRole === 'admin') {
+                        photoActions.innerHTML = `
+                            <button class="link-btn" onclick="openPhotoUpload()">Изменить фото</button>
+                            <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
+                            <input type="file" id="photoInput" style="display: none">
+                        `;
+                    } else {
+                        // Обычные пользователи не могут изменять существующие фото
+                        photoActions.innerHTML = `
+                            <span class="link-btn disabled">Только админы могут изменять фото</span>
+                        `;
+                    }
+                }
+                
+                // Добавляем обработчик событий для нового input
+                const photoInput = document.getElementById('photoInput');
+                if (photoInput) {
+                    setupPhotoInputHandler(photoInput);
+                }
+                
+                photoActions.style.display = 'block';
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                photoActions.style.display = 'none';
+            }
+        }
+
+        // Проверка наличия фото у пользователя
+        async function checkUserHasPhoto(email, institute) {
+            try {
+                const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
+                const response = await fetch(photoUrl);
+                return response.ok;
+            } catch (error) {
+                console.error('Ошибка при проверке фото:', error);
+                return false;
+            }
+        }
+
+        // Проверка роли пользователя через API
+        async function getUserRole() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return 'guest';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/check-role`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.role) {
+                    return data.role;
+                }
+                
+                return 'guest';
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                return 'guest';
             }
         }
         
@@ -286,6 +385,12 @@
                 e.preventDefault();
                 await saveUserChanges();
             });
+            
+            // Инициализируем обработчик фото если элемент уже существует
+            const existingPhotoInput = document.getElementById('photoInput');
+            if (existingPhotoInput) {
+                setupPhotoInputHandler(existingPhotoInput);
+            }
         });
 
         // Сохранение изменений пользователя
@@ -533,70 +638,78 @@
             }
         }
 
-        // Обработка загрузки фото
-        document.getElementById('photoInput').addEventListener('change', async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            if (!currentUser || !currentInstitute) {
-                alert('Ошибка: данные пользователя не загружены');
-                return;
-            }
-            
-            const authToken = localStorage.getItem('authToken');
-            if (!authToken) {
-                alert('Для изменения фотографии необходимо авторизоваться');
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Проверяем размер файла (5 МБ)
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Размер фотографии не должен превышать 5 МБ');
-                this.value = '';
-                return;
-            }
-            
-            // Проверяем тип файла
-            if (!file.type.startsWith('image/')) {
-                alert('Пожалуйста, выберите файл изображения');
-                this.value = '';
-                return;
-            }
-            
-            try {
-                const formData = new FormData();
-                formData.append('photo', file);
+        // Настройка обработчика для input файла
+        function setupPhotoInputHandler(photoInput) {
+            photoInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
                 
-                const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(currentUser.email)}/photo?institute=${currentInstitute}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'Ok') {
-                    alert('Фотография успешно обновлена');
-                    // Обновляем отображение фото
-                    loadUserPhoto(currentUser.email, currentInstitute);
-                } else {
-                    if (result.error && result.error.includes('forbidden')) {
-                        alert('У вас нет прав для изменения фотографий. Обратитесь к администратору.');
-                    } else {
-                        alert('Ошибка при загрузке фотографии: ' + (result.error || 'Неизвестная ошибка'));
-                    }
+                if (!currentUser || !currentInstitute) {
+                    alert('Ошибка: данные пользователя не загружены');
+                    return;
                 }
-            } catch (error) {
-                console.error('Ошибка при загрузке фотографии:', error);
-                alert('Ошибка при загрузке фотографии');
-            }
-            
-            // Очищаем input для возможности повторной загрузки того же файла
-            this.value = '';
-        });
+                
+                const authToken = localStorage.getItem('authToken');
+                if (!authToken) {
+                    alert('Для изменения фотографии необходимо авторизоваться');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Проверяем размер файла (5 МБ)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Размер фотографии не должен превышать 5 МБ');
+                    this.value = '';
+                    return;
+                }
+                
+                // Проверяем тип файла
+                if (!file.type.startsWith('image/')) {
+                    alert('Пожалуйста, выберите файл изображения');
+                    this.value = '';
+                    return;
+                }
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    
+                    // Используем текущее состояние фото для определения метода
+                    const method = currentHasPhoto ? 'PUT' : 'POST';
+                    
+                    const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(currentUser.email)}/photo?institute=${currentInstitute}`, {
+                        method: method,
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'Ok') {
+                        alert(`Фотография успешно ${currentHasPhoto ? 'обновлена' : 'загружена'}`);
+                        // Обновляем отображение фото
+                        loadUserPhoto(currentUser.email, currentInstitute);
+                    } else {
+                        if (result.error && result.error.includes('forbidden')) {
+                            alert('У вас нет прав для изменения фотографий. Обратитесь к администратору.');
+                        } else if (result.error && result.error.includes('already has a photo')) {
+                            alert('У пользователя уже есть фото. Обновите страницу и попробуйте снова.');
+                            loadUserPhoto(currentUser.email, currentInstitute);
+                        } else {
+                            alert('Ошибка при загрузке фотографии: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке фотографии:', error);
+                    alert('Ошибка при загрузке фотографии');
+                }
+                
+                // Очищаем input для возможности повторной загрузки того же файла
+                this.value = '';
+            });
+        }
 
         // Функции для работы с превью фото в модальном окне редактирования
         function setupEditPhotoPreview() {

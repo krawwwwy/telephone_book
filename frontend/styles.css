@@ -1571,3 +1571,16 @@ input:focus {
     border-color: #007bff;
     box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
+
+/* Стили для отключенных кнопок */
+.link-btn.disabled {
+    color: #999;
+    cursor: not-allowed;
+    text-decoration: none;
+    opacity: 0.6;
+}
+
+.link-btn.disabled:hover {
+    color: #999;
+    text-decoration: none;
+}
