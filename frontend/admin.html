@@ -453,7 +453,7 @@
                 }
             });
         };
-
+        
         // Загрузка всех пользователей
         async function loadAllUsers() {
             try {
@@ -534,46 +534,46 @@
         const searchElement = document.getElementById('search');
         if (searchElement) {
             searchElement.addEventListener('input', function () {
-                const query = this.value.toLowerCase();
-                const rows = document.querySelectorAll('.admin-table tbody tr');
-                
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(query) ? '' : 'none';
-                });
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.admin-table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
             });
+        });
         }
 
         // Обработка импорта файла
         const uploadForm = document.getElementById('uploadForm');
         if (uploadForm) {
             uploadForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(e.target);
-                const institute = document.getElementById('instituteSelect').value;
-                formData.append('institute', institute);
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const institute = document.getElementById('instituteSelect').value;
+            formData.append('institute', institute);
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: formData
+                });
+                const result = await response.json();
                 
-                try {
-                    const response = await fetch(`${API_BASE}/workers/import`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                        },
-                        body: formData
-                    });
-                    const result = await response.json();
-                    
-                    if (result.status === 'Ok') {
-                        alert('Импорт завершён успешно');
-                        loadAllUsers(); // Перезагружаем список
-                    } else {
-                        alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
-                    }
-                } catch (err) {
-                    alert('Ошибка при импорте файла');
-                    console.error(err);
+                if (result.status === 'Ok') {
+                    alert('Импорт завершён успешно');
+                    loadAllUsers(); // Перезагружаем список
+                } else {
+                    alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
                 }
-            });
+            } catch (err) {
+                alert('Ошибка при импорте файла');
+                console.error(err);
+            }
+        });
         }
 
         const fileInput = document.getElementById('fileInput');

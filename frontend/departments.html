@@ -28,12 +28,10 @@
     <main class="main-content">
         <aside class="sidebar">
             <div class="division-links">
-                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-                <a href="#" id="link-grafit" onclick="switchDivision('grafit')">Графит</a>
+                <a href="division.html?division=giredmet" id="link-giredmet">Гиредмет</a> /
+                <a href="division.html?division=grafit" id="link-grafit">Графит</a>
             </div>
-            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
-                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
-            </div>
+
             <ul class="department-list" id="department-list">
             </ul>
         </aside>
@@ -96,15 +94,7 @@
             // Загружаем отделы для выбранного института
             loadDepartments(name);
 
-            const buttonContainer = document.getElementById('division-button-container');
-            const divisionButton = document.getElementById('current-division-btn');
-
-            buttonContainer.style.display = 'block';
-            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
-            divisionButton.onclick = () => {
-                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
-            };
-
+            // Обновляем активную вкладку
             document.getElementById('link-giredmet').classList.remove('active-division');
             document.getElementById('link-grafit').classList.remove('active-division');
             document.getElementById(`link-${name}`).classList.add('active-division');
@@ -161,6 +151,25 @@
 
         function closeImportModal() {
             document.getElementById("importModal").style.display = "none";
+            
+            // Очищаем форму
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.reset();
+                
+                // Сбрасываем текст имени файла
+                const fileNameSpan = document.getElementById('fileName');
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = 'Файл не выбран';
+                }
+                
+                // Восстанавливаем кнопку если она была заблокирована
+                const submitBtn = uploadForm.querySelector('.submit-btn');
+                if (submitBtn) {
+                    submitBtn.textContent = 'Импортировать';
+                    submitBtn.disabled = false;
+                }
+            }
         }
 
         let contactRowToDelete = null;
@@ -170,6 +179,25 @@
             const value = input.value.trim();
             if (value) {
                 console.log(`Поиск: ${value}`);
+            }
+        }
+
+        // Обновление видимости кнопок действий
+        function updateActionButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const addContactBtn = document.querySelector('.add-btn[onclick="openAddContactModal()"]');
+            const importBtn = document.querySelector('.add-btn[onclick="openImportModal()"]');
+            
+            if (addContactBtn && importBtn) {
+                if (authToken) {
+                    // Показываем кнопки для авторизованных пользователей
+                    addContactBtn.style.display = 'inline-block';
+                    importBtn.style.display = 'inline-block';
+                } else {
+                    // Скрываем кнопки для неавторизованных пользователей
+                    addContactBtn.style.display = 'none';
+                    importBtn.style.display = 'none';
+                }
             }
         }
 
@@ -438,6 +466,7 @@
             
             // Обновляем header при загрузке страницы
             updateHeaderButtons();
+            updateActionButtons(); // Вызываем функцию для обновления кнопок действий
 
             // Обработка формы добавления контакта
             const contactForm = document.getElementById('contactForm');
@@ -545,9 +574,7 @@
             if (uploadForm) {
                 uploadForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const formData = new FormData(e.target);
-                    formData.append('institute', division);
-
+                    
                     // Проверяем наличие токена авторизации
                     const authToken = localStorage.getItem('authToken');
                     if (!authToken) {
@@ -555,6 +582,34 @@
                         window.location.href = 'login.html';
                         return;
                     }
+
+                    // Проверяем выбран ли файл
+                    const fileInput = document.getElementById('fileInput');
+                    if (!fileInput.files.length) {
+                        alert('Пожалуйста, выберите файл для импорта');
+                        return;
+                    }
+
+                    // Проверяем тип файла
+                    const file = fileInput.files[0];
+                    const allowedTypes = [
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+                        'application/vnd.ms-excel' // .xls
+                    ];
+                    
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Пожалуйста, выберите файл Excel (.xlsx или .xls)');
+                        return;
+                    }
+
+                    const formData = new FormData(e.target);
+                    formData.append('institute', division);
+
+                    // Показываем индикацию загрузки
+                    const submitBtn = e.target.querySelector('.submit-btn');
+                    const originalText = submitBtn.textContent;
+                    submitBtn.textContent = 'Импортируется...';
+                    submitBtn.disabled = true;
                     
                     try {
                         const response = await fetch(`${API_BASE}/workers/import`, {
@@ -564,19 +619,25 @@
                             },
                             body: formData
                         });
+
                         const result = await response.json();
                         
                         if (result.status === 'Ok') {
                             alert('Импорт завершён успешно');
-                            loadWorkers();
+                            closeImportModal(); // Закрываем модальное окно
+                            loadWorkers(); // Перезагружаем список работников
                         } else {
                             alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
                         }
-            } catch (err) {
-                alert('Ошибка при импорте файла');
-                console.error(err);
-            }
-        });
+                    } catch (err) {
+                        alert('Ошибка при импорте файла: ' + err.message);
+                        console.error(err);
+                    } finally {
+                        // Восстанавливаем кнопку
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
             }
 
             const fileInput = document.getElementById('fileInput');
@@ -778,12 +839,20 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeImportModal()">&times;</span>
             <h2>Импорт контактов</h2>
-            <p class="modal-subtitle">Загрузите файл с контактами</p>
+            <p class="modal-subtitle">Загрузите файл Excel с контактами</p>
+            <div class="import-info">
+                <p><strong>Требования к файлу:</strong></p>
+                <ul>
+                    <li>Формат: Excel (.xlsx или .xls)</li>
+                    <li>Первая строка должна содержать заголовки</li>
+                    <li>Обязательные поля: Фамилия, Имя, Email</li>
+                </ul>
+            </div>
             <form id="uploadForm" enctype="multipart/form-data" method="post">
                 <div class="file-upload-wrapper">
-                    <label for="fileInput" class="file-upload-label">Выбрать файл</label>
+                    <label for="fileInput" class="file-upload-label">Выбрать файл Excel</label>
                     <span id="fileName" class="file-name">Файл не выбран</span>
-                    <input type="file" name="file" id="fileInput" required>
+                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required>
                 </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>

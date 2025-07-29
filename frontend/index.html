@@ -29,11 +29,8 @@
     <main class="main-content">
         <aside class="sidebar">
             <div class="division-links">
-                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-                <a href="#" id="link-grafit" onclick="switchDivision('grafit')">Графит</a>
-            </div>
-            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
-                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+                <a href="division.html?division=giredmet" id="link-giredmet">Гиредмет</a> /
+                <a href="division.html?division=grafit" id="link-grafit">Графит</a>
             </div>
 
             <ul class="department-list" id="department-list">
@@ -408,137 +405,111 @@
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             loadEmergencyServices();
-            loadBirthdays();
-            loadDepartments();
+            loadDepartments('giredmet'); // Загружаем отделы Гиредмет по умолчанию
+            loadBirthdays('giredmet'); // Загружаем дни рождения Гиредмет по умолчанию
+            updateHeaderButtons();
+        });
 
-            // Получение информации о текущем пользователе
-            async function getCurrentUserInfo() {
-                const authToken = localStorage.getItem('authToken');
-                if (!authToken) return null;
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
                 
-                try {
-                    const response = await fetch(`${API_BASE}/auth/user-info`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${authToken}`
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        console.warn('API user-info недоступен');
-                        return null;
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.status === 'Ok' && data.email) {
-                        return {
-                            email: data.email,
-                            role: data.role
-                        };
-                    }
-                    
-                    return null;
-                } catch (error) {
-                    console.error('Ошибка при получении информации о пользователе:', error);
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
                     return null;
                 }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.email) {
+                    return {
+                        email: data.email,
+                        role: data.role
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                return null;
             }
+        }
 
-            // Обновление header с информацией о пользователе
-            async function updateHeaderButtons() {
-                const authToken = localStorage.getItem('authToken');
-                const headerRight = document.querySelector('.header-right');
-                
-                if (!headerRight) return;
-                
-                if (authToken) {
-                    try {
-                        const userInfo = await getCurrentUserInfo();
-                        
-                        if (userInfo) {
-                            // Форматируем роль для отображения
-                            let roleDisplay = '';
-                            switch (userInfo.role) {
-                                case 'admin':
-                                    roleDisplay = 'Администратор';
-                                    break;
-                                case 'user':
-                                    roleDisplay = 'Пользователь';
-                                    break;
-                                default:
-                                    roleDisplay = 'Гость';
-                            }
-                            
-                            // Показываем кнопку админ-панели только для администраторов
-                            const adminPanelButton = userInfo.role === 'admin' 
-                                ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
-                                : '';
-                            
-                            headerRight.innerHTML = `
-                                <div class="user-info">
-                                    <span class="user-email">${userInfo.email}</span>
-                                    <span class="user-role">${roleDisplay}</span>
-                                </div>
-                                ${adminPanelButton}
-                                <button class="btn-primary" onclick="logout()">Выйти</button>
-                            `;
-                        } else {
-                            headerRight.innerHTML = `
-                                <span class="user-info">Авторизован</span>
-                                <button class="btn-primary" onclick="logout()">Выйти</button>
-                            `;
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = 'Гость';
                         }
-                    } catch (error) {
-                        console.error('Error updating header with user info:', error);
+                        
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            ${adminPanelButton}
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
                         headerRight.innerHTML = `
                             <span class="user-info">Авторизован</span>
                             <button class="btn-primary" onclick="logout()">Выйти</button>
                         `;
                     }
-                } else {
+                } catch (error) {
+                    console.error('Error updating header with user info:', error);
                     headerRight.innerHTML = `
-                        <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
                     `;
                 }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
             }
-
-            // Функция выхода
-            function logout() {
-                localStorage.removeItem('authToken');
-                alert('Вы вышли из системы. Страница будет обновлена.');
-                location.reload();
-            }
-
-            // Обновляем header при загрузке страницы
-            updateHeaderButtons();
-            
-            // По умолчанию загружаем Гиредмет
-            switchDivision('giredmet');
-        });
-
-        function switchDivision(name) {
-            // Сначала загружаем отделы для выбранного института
-            loadDepartments(name);
-
-            const buttonContainer = document.getElementById('division-button-container');
-            const divisionButton = document.getElementById('current-division-btn');
-
-            buttonContainer.style.display = 'block';
-            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
-            divisionButton.onclick = () => {
-                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
-            };
-
-            // Обновляем активную вкладку
-            document.getElementById('link-giredmet').classList.remove('active-division');
-            document.getElementById('link-grafit').classList.remove('active-division');
-            document.getElementById(`link-${name}`).classList.add('active-division');
-
-            // Обновляем текущий институт и перезагружаем дни рождения
-            currentInstitute = name;
-            loadBirthdays(name);
         }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
+
+        // Удалена функция switchDivision - теперь институты переходят напрямую на division.html
     </script>
 </body>
 
