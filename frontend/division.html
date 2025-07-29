@@ -456,9 +456,15 @@
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Division page loaded with division:', division);
+            
             const headerText = document.querySelector('#divisionTitle');
             if (headerText) {
-                headerText.textContent = `Все контакты ${division === 'giredmet' ? 'Гиредмет' : 'Графит'}`;
+                const newTitle = `Все контакты ${division === 'giredmet' ? 'Гиредмет' : 'Графит'}`;
+                console.log('Setting header title to:', newTitle);
+                headerText.textContent = newTitle;
+            } else {
+                console.error('Header element #divisionTitle not found');
             }
             
             loadBreadcrumbs();

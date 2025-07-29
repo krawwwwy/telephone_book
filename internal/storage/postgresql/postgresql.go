@@ -113,21 +113,29 @@ func (s *Storage) Search(ctx context.Context, institute string, department strin
 	var users []models.User
 	for rows.Next() {
 		var user models.User
+		var middleName, cabinet, position, department sql.NullString
 
 		err := rows.Scan(
 			&user.ID,
 			&user.Surname,
 			&user.Name,
-			&user.MiddleName,
+			&middleName,
 			&user.Email,
 			&user.PhoneNumber,
-			&user.Cabinet,
-			&user.Position,
-			&user.Department,
+			&cabinet,
+			&position,
+			&department,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
 		}
+
+		// Конвертируем NullString в обычные строки
+		user.MiddleName = middleName.String
+		user.Cabinet = cabinet.String
+		user.Position = position.String
+		user.Department = department.String
+
 		users = append(users, user)
 	}
 
@@ -295,7 +303,8 @@ func (s *Storage) getBirthdaysByOffset(ctx context.Context, institute string, da
 	query := fmt.Sprintf(`
         SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date
         FROM workers
-        WHERE EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
+        WHERE birth_date IS NOT NULL 
+          AND EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
           AND EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '%d day')
         ORDER BY surname, name
     `, dayOffset, dayOffset)

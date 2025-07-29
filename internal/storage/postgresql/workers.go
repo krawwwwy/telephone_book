@@ -188,21 +188,23 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		FROM workers WHERE email = $1`
 
 	var user models.User
+	var middleName, cabinet, position, department, section, description sql.NullString
+	var photo []byte // photo может быть NULL, но мы обработаем это отдельно
 
 	err := s.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.Surname,
 		&user.Name,
-		&user.MiddleName,
+		&middleName,
 		&user.Email,
 		&user.PhoneNumber,
-		&user.Cabinet,
-		&user.Position,
-		&user.Department,
-		&user.Section,
+		&cabinet,
+		&position,
+		&department,
+		&section,
 		&user.BirthDate,
-		&user.Description,
-		&user.Photo,
+		&description,
+		&photo,
 	)
 
 	if err != nil {
@@ -211,6 +213,15 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		}
 		return models.EmptyUser, fmt.Errorf("%s: %w", op, err)
 	}
+
+	// Конвертируем NullString в обычные строки
+	user.MiddleName = middleName.String
+	user.Cabinet = cabinet.String
+	user.Position = position.String
+	user.Department = department.String
+	user.Section = section.String
+	user.Description = description.String
+	user.Photo = photo
 
 	return user, nil
 }
@@ -250,22 +261,31 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	var users []models.User
 	for rows.Next() {
 		var user models.User
+		var middleName, cabinet, position, department, section sql.NullString
 
 		err := rows.Scan(
 			&user.ID,
 			&user.Surname,
 			&user.Name,
-			&user.MiddleName,
+			&middleName,
 			&user.Email,
 			&user.PhoneNumber,
-			&user.Cabinet,
-			&user.Position,
-			&user.Department,
-			&user.Section,
+			&cabinet,
+			&position,
+			&department,
+			&section,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
 		}
+
+		// Конвертируем NullString в обычные строки
+		user.MiddleName = middleName.String
+		user.Cabinet = cabinet.String
+		user.Position = position.String
+		user.Department = department.String
+		user.Section = section.String
+
 		users = append(users, user)
 	}
 
