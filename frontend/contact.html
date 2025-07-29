@@ -22,6 +22,7 @@
                 Админ-панель
             </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+            <button class="btn-secondary" onclick="setTestToken()" title="Для тестирования">Тест-токен</button>
         </div>
     </header>
 
@@ -35,7 +36,7 @@
                     <div class="profile-photo">
                         <img src="images/person.jpg" alt="Фото сотрудника" id="profileImage">
                     </div>
-                    <div class="photo-actions">
+                    <div class="photo-actions" style="display: none;">
                         <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
                         <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
                         <input type="file" id="photoInput" style="display: none">
@@ -247,26 +248,45 @@
                 const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
                 const response = await fetch(photoUrl);
                 
+                console.log('Photo check response:', response.status, response.ok); // Отладка
+                
                 if (response.ok) {
-                    const profileImage = document.getElementById('profileImage');
-                    profileImage.src = photoUrl;
-                    profileImage.onerror = function() {
-                        // Если фото не загружается, показываем placeholder
-                        this.src = 'images/person.jpg';
-                    };
+                    // Проверяем тип содержимого - если это изображение, то фото есть
+                    const contentType = response.headers.get('content-type');
+                    console.log('Content-Type:', contentType); // Отладка
                     
-                    // Обновляем отображение кнопок для случая, когда фото есть
-                    updatePhotoButtons(true);
+                    if (contentType && contentType.startsWith('image/')) {
+                        // Это реальная фотография
+                        const profileImage = document.getElementById('profileImage');
+                        profileImage.src = photoUrl;
+                        profileImage.onerror = function() {
+                            // Если фото не загружается, показываем placeholder
+                            this.src = 'images/person.jpg';
+                        };
+                        
+                        console.log('Photo found, updating buttons with hasPhoto=true'); // Отладка
+                        // Обновляем отображение кнопок для случая, когда фото есть
+                        updatePhotoButtons(true);
+                    } else {
+                        // Это JSON ответ об отсутствии фото
+                        document.getElementById('profileImage').src = 'images/person.jpg';
+                        
+                        console.log('No photo (JSON response), updating buttons with hasPhoto=false'); // Отладка
+                        // Обновляем отображение кнопок для случая, когда фото нет
+                        updatePhotoButtons(false);
+                    }
                 } else {
                     // Если фото нет, используем placeholder
                     document.getElementById('profileImage').src = 'images/person.jpg';
                     
+                    console.log('Photo not found, updating buttons with hasPhoto=false'); // Отладка
                     // Обновляем отображение кнопок для случая, когда фото нет
                     updatePhotoButtons(false);
                 }
             } catch (error) {
                 console.error('Ошибка загрузки фотографии:', error);
                 document.getElementById('profileImage').src = 'images/person.jpg';
+                console.log('Photo load error, updating buttons with hasPhoto=false'); // Отладка
                 updatePhotoButtons(false);
             }
         }
@@ -277,8 +297,13 @@
             const photoActions = document.querySelector('.photo-actions');
             const authToken = localStorage.getItem('authToken');
             
+            console.log('=== updatePhotoButtons called ===');
+            console.log('hasPhoto:', hasPhoto);
+            console.log('authToken present:', !!authToken);
+            
             if (!authToken) {
                 // Если нет токена, скрываем все кнопки
+                console.log('No auth token, hiding buttons');
                 photoActions.style.display = 'none';
                 return;
             }
@@ -286,28 +311,46 @@
             try {
                 // Проверяем роль пользователя
                 const userRole = await getUserRole();
+                console.log('User role:', userRole, 'Has photo:', hasPhoto); // Для отладки
                 
                 photoActions.innerHTML = '';
                 
                 if (!hasPhoto) {
-                    // Если фото нет, авторизованные пользователи могут загрузить
-                    photoActions.innerHTML = `
-                        <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
-                        <input type="file" id="photoInput" style="display: none">
-                    `;
+                    console.log('No photo - checking user role for upload permission');
+                    // Если фото нет, любые авторизованные пользователи (user или admin) могут загрузить
+                    if (userRole === 'user' || userRole === 'admin') {
+                        console.log('User can upload photo - showing upload button');
+                        photoActions.innerHTML = `
+                            <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                            <input type="file" id="photoInput" style="display: none">
+                        `;
+                    } else {
+                        console.log('User cannot upload photo - hiding buttons');
+                        // Неавторизованные пользователи не видят кнопки
+                        photoActions.style.display = 'none';
+                        return;
+                    }
                 } else {
+                    console.log('Photo exists - checking user role for modification permission');
                     // Если фото есть, показываем кнопки в зависимости от роли
                     if (userRole === 'admin') {
+                        console.log('Admin can modify photo - showing modify/delete buttons');
                         photoActions.innerHTML = `
                             <button class="link-btn" onclick="openPhotoUpload()">Изменить фото</button>
                             <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
                             <input type="file" id="photoInput" style="display: none">
                         `;
-                    } else {
+                    } else if (userRole === 'user') {
+                        console.log('Regular user cannot modify existing photo - showing disabled message');
                         // Обычные пользователи не могут изменять существующие фото
                         photoActions.innerHTML = `
                             <span class="link-btn disabled">Только админы могут изменять фото</span>
                         `;
+                    } else {
+                        console.log('Unauthorized user - hiding buttons');
+                        // Неавторизованные пользователи не видят кнопки
+                        photoActions.style.display = 'none';
+                        return;
                     }
                 }
                 
@@ -318,9 +361,26 @@
                 }
                 
                 photoActions.style.display = 'block';
+                console.log('=== updatePhotoButtons completed ===');
             } catch (error) {
                 console.error('Ошибка при проверке роли:', error);
-                photoActions.style.display = 'none';
+                // При ошибке показываем кнопки для авторизованных пользователей
+                if (!hasPhoto) {
+                    console.log('Error occurred but showing fallback upload button');
+                    photoActions.innerHTML = `
+                        <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                        <input type="file" id="photoInput" style="display: none">
+                    `;
+                    
+                    const photoInput = document.getElementById('photoInput');
+                    if (photoInput) {
+                        setupPhotoInputHandler(photoInput);
+                    }
+                    
+                    photoActions.style.display = 'block';
+                } else {
+                    photoActions.style.display = 'none';
+                }
             }
         }
 
@@ -329,7 +389,13 @@
             try {
                 const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
                 const response = await fetch(photoUrl);
-                return response.ok;
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    return contentType && contentType.startsWith('image/');
+                }
+                
+                return false;
             } catch (error) {
                 console.error('Ошибка при проверке фото:', error);
                 return false;
@@ -349,16 +415,23 @@
                     }
                 });
                 
+                if (!response.ok) {
+                    console.warn('API check-role недоступен, используем fallback');
+                    return 'user'; // По умолчанию считаем авторизованного пользователя обычным пользователем
+                }
+                
                 const data = await response.json();
                 
                 if (data.status === 'Ok' && data.role) {
                     return data.role;
                 }
                 
-                return 'guest';
+                console.warn('Неожиданный ответ от API, используем fallback');
+                return 'user';
             } catch (error) {
                 console.error('Ошибка при проверке роли:', error);
-                return 'guest';
+                console.warn('Используем fallback роль user для авторизованного пользователя');
+                return 'user'; // Если есть токен, но API недоступен, считаем пользователем
             }
         }
         
@@ -376,8 +449,22 @@
             `;
         }
         
+        // Функция для установки тестового токена (для отладки)
+        function setTestToken() {
+            localStorage.setItem('authToken', 'test-token-user-' + Date.now());
+            alert('Тестовый токен установлен. Обновите страницу для применения изменений.');
+            location.reload();
+        }
+
         // Загружаем данные при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
+            // Отладочная информация
+            const authToken = localStorage.getItem('authToken');
+            console.log('Page loaded. Auth token present:', !!authToken);
+            
+            // Обновляем header
+            updateHeaderButtons();
+            
             loadUserData();
             
             // Добавляем обработчик формы редактирования
@@ -391,7 +478,41 @@
             if (existingPhotoInput) {
                 setupPhotoInputHandler(existingPhotoInput);
             }
+            
+            // Добавляем визуальную отладочную информацию
+            if (authToken) {
+                document.title += ' [АВТОРИЗОВАН]';
+            } else {
+                document.title += ' [ГОСТЬ]';
+            }
         });
+
+        // Обновление кнопок в header
+        function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (authToken) {
+                headerRight.innerHTML = `
+                    <a href="admin.html" class="btn-primary">Админ-панель</a>
+                    <button class="btn-primary" onclick="logout()">Выйти</button>
+                    <button class="btn-secondary" onclick="setTestToken()" title="Для тестирования">Тест-токен</button>
+                `;
+            } else {
+                headerRight.innerHTML = `
+                    <a href="admin.html" class="btn-primary">Админ-панель</a>
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                    <button class="btn-secondary" onclick="setTestToken()" title="Для тестирования">Тест-токен</button>
+                `;
+            }
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
 
         // Сохранение изменений пользователя
         async function saveUserChanges() {
