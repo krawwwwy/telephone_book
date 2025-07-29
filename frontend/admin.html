@@ -37,7 +37,7 @@
             <h2>Редактирование отделов</h2>
             <div class="division-tabs">
                 <button class="division-tab active" data-division="giredmet">Гиредмет</button>
-                <button class="division-tab" data-division="graphite">Графит</button>
+                <button class="division-tab" data-division="grafit">Графит</button>
             </div>
 
             <div class="departments-editor">
@@ -90,11 +90,11 @@
             <h2>Добавление отдела</h2>
             <p class="modal-subtitle">Заполните поля</p>
             <div class="form-group">
-                <input type="text" placeholder="Название отдела*" class="form-input" required>
+                <input type="text" placeholder="Название отдела*" id="departmentName" class="form-input" required>
             </div>
 
             <div class="form-group">
-                <input type="text" placeholder="Институт*" class="form-input" required>
+                <input type="text" placeholder="Институт*" id="instituteName" class="form-input" required>
             </div>
 
             <div class="subdepartments-section">
@@ -157,7 +157,197 @@
 
     <script>
         const API_BASE = 'http://localhost:8080';
-        
+
+        // Функции для работы с модальными окнами
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Очищаем форму при закрытии
+            if (modalId === 'addDepartmentModal') {
+                clearDepartmentForm();
+            }
+        }
+
+        // Очистка формы добавления отдела
+        function clearDepartmentForm() {
+            document.getElementById('departmentName').value = '';
+            document.getElementById('instituteName').value = '';
+            
+            // Очищаем список подотделов
+            document.getElementById('subdepartmentsList').innerHTML = '';
+        }
+
+        // Добавление поля для подотдела
+        function addSubdepartmentField(isEdit = false) {
+            const container = isEdit ? 
+                document.getElementById('editSubdepartmentsList') : 
+                document.getElementById('subdepartmentsList');
+            
+            const subdepartmentDiv = document.createElement('div');
+            subdepartmentDiv.className = 'subdepartment-field';
+            subdepartmentDiv.innerHTML = `
+                <input type="text" placeholder="Название подотдела" class="form-input subdepartment-input">
+                <button type="button" class="remove-subdepartment-btn" onclick="removeSubdepartmentField(this)">
+                    <span>−</span> Удалить
+                </button>
+            `;
+            
+            container.appendChild(subdepartmentDiv);
+        }
+
+        // Удаление поля подотдела
+        function removeSubdepartmentField(button) {
+            button.parentElement.remove();
+        }
+
+        // Отправка данных для создания отдела
+        async function submitDepartment() {
+            const modal = document.getElementById('addDepartmentModal');
+            const inputs = modal.querySelectorAll('.form-input');
+            
+            const departmentName = inputs[0].value.trim();
+            const institute = inputs[1].value.trim();
+            
+            // Валидация
+            if (!departmentName) {
+                alert('Пожалуйста, введите название отдела');
+                return;
+            }
+            
+            if (!institute) {
+                alert('Пожалуйста, введите институт');
+                return;
+            }
+
+            // Собираем подотделы
+            const subdepartmentInputs = modal.querySelectorAll('.subdepartment-input');
+            const sections = Array.from(subdepartmentInputs)
+                .map(input => input.value.trim())
+                .filter(value => value.length > 0);
+
+            const requestData = {
+                name: departmentName,
+                institute: institute,
+                sections: sections
+            };
+
+            console.log('Отправляем данные для создания отдела:', requestData);
+
+            // Проверяем токен авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для создания отдела необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/departments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно создан');
+                    closeModal('addDepartmentModal');
+                    // Перезагружаем список отделов для текущего института
+                    const activeTab = document.querySelector('.division-tab.active');
+                    if (activeTab) {
+                        const currentInstitute = activeTab.getAttribute('data-division');
+                        loadDepartments(currentInstitute);
+                    }
+                } else {
+                    alert('Ошибка при создании отдела: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при создании отдела:', error);
+                alert('Ошибка при создании отдела: ' + error.message);
+            }
+        }
+
+        // Создание пользователя (заглушка)
+        async function submitUser() {
+            alert('Функция создания пользователя в разработке');
+        }
+
+        // Загрузка отделов для админ-панели
+        async function loadDepartments(institute = 'giredmet') {
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                console.log(`Отделы для ${institute}:`, data);
+                
+                const departmentsList = document.getElementById('departmentsList');
+                departmentsList.innerHTML = '';
+                
+                if (data.status === 'Ok' && data.departments) {
+                    data.departments.forEach(dept => {
+                        const deptDiv = document.createElement('div');
+                        deptDiv.className = 'department-item admin-dept-item';
+                        deptDiv.innerHTML = `
+                            <div class="dept-name">${dept.name}</div>
+                            <div class="dept-actions">
+                                <button class="edit-btn" onclick="editDepartment('${dept.name}', '${institute}')">Редактировать</button>
+                                <button class="delete-btn" onclick="deleteDepartment('${dept.name}', '${institute}')">Удалить</button>
+                            </div>
+                        `;
+                        departmentsList.appendChild(deptDiv);
+                    });
+                } else {
+                    departmentsList.innerHTML = '<p>Отделы не найдены</p>';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки отделов:', error);
+                document.getElementById('departmentsList').innerHTML = '<p>Ошибка загрузки отделов</p>';
+            }
+        }
+
+        // Переключение между институтами
+        function switchInstitute(institute) {
+            // Обновляем активную вкладку
+            document.querySelectorAll('.division-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-division="${institute}"]`).classList.add('active');
+            
+            // Загружаем отделы для выбранного института
+            loadDepartments(institute);
+        }
+
+        // Обработчики для вкладок институтов
+        document.addEventListener('DOMContentLoaded', function() {
+            // Сначала проверяем доступ
+            checkAdminAccess();
+            
+            document.querySelectorAll('.division-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const institute = this.getAttribute('data-division');
+                    switchInstitute(institute);
+                });
+            });
+        });
+
+        // Закрытие модальных окон по клику вне их
+        window.onclick = function (event) {
+            const modals = ['addUserModal', 'addDepartmentModal', 'editDepartmentModal', 'deleteDepartmentModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    closeModal(modalId);
+                }
+            });
+        };
+
         // Загрузка всех пользователей
         async function loadAllUsers() {
             try {
@@ -320,6 +510,7 @@
                 if (data.status === 'Ok' && data.role === 'admin') {
                     // Пользователь администратор, загружаем данные
                     loadAllUsers();
+                    loadDepartments('giredmet');
                 } else {
                     alert('Доступ запрещен. Требуются права администратора.');
                     window.location.href = 'index.html';
@@ -328,6 +519,17 @@
                 console.error('Ошибка при проверке роли:', error);
                 alert('Ошибка проверки доступа');
                 window.location.href = 'index.html';
+            }
+        }
+
+        // Заглушки для редактирования и удаления отделов
+        function editDepartment(name, institute) {
+            alert(`Редактирование отдела "${name}" в институте "${institute}" (функция в разработке)`);
+        }
+
+        function deleteDepartment(name, institute) {
+            if (confirm(`Вы уверены, что хотите удалить отдел "${name}"?`)) {
+                alert(`Удаление отдела "${name}" (функция в разработке)`);
             }
         }
 
