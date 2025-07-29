@@ -1953,3 +1953,138 @@ input:focus {
 }
 
 /* Улучшенные стили для существующих элементов */
+
+/* Улучшенные стили для импорта */
+.import-info {
+    margin: 20px 0;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 5px;
+}
+
+.info-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #38815a;
+}
+
+.info-section h4 {
+    margin: 0 0 10px 0;
+    color: #38815a;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.info-section ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.info-section li {
+    margin: 5px 0;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.4;
+}
+
+.import-warning {
+    padding: 12px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    color: #856404;
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+.upload-progress {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #38815a, #4caf50);
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+}
+
+.file-upload-label {
+    background-color: #38815a;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.file-upload-label:hover {
+    background-color: #2d6446;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(56, 129, 90, 0.3);
+}
+
+.submit-btn .btn-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.submit-btn:disabled .btn-text::before {
+    content: "⏳";
+    animation: spin 1s linear infinite;
+}
+
+/* Адаптивность модального окна импорта */
+@media (max-width: 768px) {
+    .import-info {
+        max-height: 300px;
+    }
+    
+    .info-section {
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .info-section h4 {
+        font-size: 13px;
+    }
+    
+    .info-section li {
+        font-size: 12px;
+    }
+    
+    .file-upload-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

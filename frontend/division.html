@@ -382,11 +382,22 @@
                     fileNameSpan.textContent = 'Файл не выбран';
                 }
                 
-                // Восстанавливаем кнопку если она была заблокирована
-                const submitBtn = uploadForm.querySelector('.submit-btn');
-                if (submitBtn) {
-                    submitBtn.textContent = 'Импортировать';
+                // Восстанавливаем кнопку
+                const submitBtn = document.getElementById('importSubmitBtn');
+                const btnText = submitBtn.querySelector('.btn-text');
+                if (submitBtn && btnText) {
+                    btnText.innerHTML = '🚀 Импортировать';
                     submitBtn.disabled = false;
+                }
+                
+                // Скрываем прогресс бар
+                const progressDiv = document.getElementById('uploadProgress');
+                const progressFill = document.querySelector('.progress-fill');
+                if (progressDiv) {
+                    progressDiv.style.display = 'none';
+                }
+                if (progressFill) {
+                    progressFill.style.width = '0%';
                 }
             }
         }
@@ -548,29 +559,54 @@
                         return;
                     }
 
-                    // Проверяем тип файла
                     const file = fileInput.files[0];
+                    
+                    // Расширенная проверка файла
                     const allowedTypes = [
                         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
                         'application/vnd.ms-excel' // .xls
                     ];
                     
                     if (!allowedTypes.includes(file.type)) {
-                        alert('Пожалуйста, выберите файл Excel (.xlsx или .xls)');
+                        alert('❌ Неподдерживаемый формат файла!\n\nПожалуйста, выберите файл Excel (.xlsx или .xls)');
+                        return;
+                    }
+                    
+                    // Проверяем размер файла (10 МБ)
+                    const maxSize = 10 * 1024 * 1024; // 10 MB
+                    if (file.size > maxSize) {
+                        alert(`❌ Файл слишком большой!\n\nМаксимальный размер: 10 МБ\nВаш файл: ${(file.size / 1024 / 1024).toFixed(2)} МБ`);
                         return;
                     }
 
                     const formData = new FormData(e.target);
                     formData.append('institute', division);
 
-                    // Показываем индикацию загрузки
-                    const submitBtn = e.target.querySelector('.submit-btn');
-                    const originalText = submitBtn.textContent;
-                    submitBtn.textContent = 'Импортируется...';
+                    // UI элементы
+                    const submitBtn = document.getElementById('importSubmitBtn');
+                    const btnText = submitBtn.querySelector('.btn-text');
+                    const progressDiv = document.getElementById('uploadProgress');
+                    const progressFill = document.querySelector('.progress-fill');
+                    const progressText = document.querySelector('.progress-text');
+                    
+                    // Показываем прогресс
+                    const originalBtnText = btnText.innerHTML;
+                    btnText.innerHTML = '⏳ Обработка...';
                     submitBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    
+                    // Анимация прогресса
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 90) progress = 90;
+                        progressFill.style.width = progress + '%';
+                    }, 200);
                     
                     try {
-                        const response = await fetch(`${API_BASE}/workers/import`, {
+                        progressText.textContent = 'Загрузка файла на сервер...';
+                        
+                        const response = await fetch(`${API_BASE}/workers/import?institute=${encodeURIComponent(division)}`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${authToken}`
@@ -578,22 +614,40 @@
                             body: formData
                         });
 
+                        progressText.textContent = 'Обработка данных...';
                         const result = await response.json();
                         
+                        // Завершаем прогресс
+                        clearInterval(progressInterval);
+                        progressFill.style.width = '100%';
+                        
                         if (result.status === 'Ok') {
-                            alert('Импорт завершён успешно');
-                            closeImportModal(); // Закрываем модальное окно
-                            loadAllWorkers(); // Перезагружаем список работников
+                            progressText.textContent = '✅ Импорт завершён успешно!';
+                            
+                            // Показываем успешное сообщение
+                            setTimeout(() => {
+                                const importedCount = result.imported_count || 'Несколько';
+                                alert(`🎉 Импорт завершён успешно!\n\n📊 Обработано записей: ${importedCount}\n\n✅ Данные обновлены в системе.`);
+                                closeImportModal();
+                                loadAllWorkers(); // Перезагружаем список работников
+                            }, 1000);
                         } else {
-                            alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                            progressText.textContent = '❌ Ошибка при импорте';
+                            alert(`❌ Ошибка импорта:\n\n${result.error || 'Неизвестная ошибка'}\n\nПроверьте формат файла и попробуйте снова.`);
                         }
                     } catch (err) {
-                        alert('Ошибка при импорте файла: ' + err.message);
-                        console.error(err);
+                        clearInterval(progressInterval);
+                        progressText.textContent = '❌ Ошибка соединения';
+                        console.error('Import error:', err);
+                        alert(`❌ Ошибка при импорте файла:\n\n${err.message}\n\nПроверьте соединение с сервером и попробуйте снова.`);
                     } finally {
-                        // Восстанавливаем кнопку
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
+                        // Восстанавливаем UI через небольшую задержку
+                        setTimeout(() => {
+                            btnText.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                            progressDiv.style.display = 'none';
+                            progressFill.style.width = '0%';
+                        }, 2000);
                     }
                 });
             }
@@ -912,25 +966,70 @@
     <div id="importModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeImportModal()">&times;</span>
-            <h2>Импорт контактов</h2>
-            <p class="modal-subtitle">Загрузите файл Excel с контактами</p>
+            <h2>📥 Импорт контактов</h2>
+            <p class="modal-subtitle">Загрузите файл Excel с данными сотрудников для массового импорта</p>
+            
             <div class="import-info">
-                <p><strong>Требования к файлу:</strong></p>
-                <ul>
-                    <li>Формат: Excel (.xlsx или .xls)</li>
-                    <li>Первая строка должна содержать заголовки</li>
-                    <li>Обязательные поля: Фамилия, Имя, Email</li>
-                </ul>
+                <div class="info-section">
+                    <h4>📋 Требования к файлу:</h4>
+                    <ul>
+                        <li><strong>Формат:</strong> Excel (.xlsx или .xls)</li>
+                        <li><strong>Максимальный размер:</strong> 10 МБ</li>
+                        <li><strong>Структура:</strong> Первая строка должна содержать заголовки столбцов</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>✅ Обязательные поля:</h4>
+                    <ul>
+                        <li>Фамилия (surname)</li>
+                        <li>Имя (name)</li>
+                        <li>Email (email)</li>
+                        <li>Рабочий телефон (phone_number)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>📝 Дополнительные поля:</h4>
+                    <ul>
+                        <li>Отчество (middle_name)</li>
+                        <li>Должность (position)</li>
+                        <li>Отдел (department)</li>
+                        <li>Подотдел (section)</li>
+                        <li>Кабинет (cabinet)</li>
+                        <li>Дата рождения (birth_date)</li>
+                        <li>Описание (description)</li>
+                    </ul>
+                </div>
+                
+                <div class="import-warning">
+                    ⚠️ <strong>Внимание:</strong> Если сотрудник с таким же email уже существует, его данные будут обновлены.
+                </div>
             </div>
+            
             <form id="uploadForm" enctype="multipart/form-data" method="post">
                 <div class="file-upload-wrapper">
-                    <label for="fileInput" class="file-upload-label">Выбрать файл Excel</label>
+                    <label for="fileInput" class="file-upload-label">
+                        📁 Выбрать файл Excel
+                    </label>
                     <span id="fileName" class="file-name">Файл не выбран</span>
-                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" required>
+                    <input type="file" name="file" id="fileInput" 
+                           accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
+                           required>
                 </div>
+                
+                <div id="uploadProgress" class="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <span class="progress-text">Загрузка и обработка файла...</span>
+                </div>
+                
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Импортировать</button>
+                    <button type="submit" class="submit-btn" id="importSubmitBtn">
+                        <span class="btn-text">🚀 Импортировать</span>
+                    </button>
                 </div>
             </form>
         </div>
