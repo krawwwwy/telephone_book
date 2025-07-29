@@ -476,9 +476,12 @@
                     
                     if (data.status === 'Ok' && data.users) {
                         data.users.forEach(user => {
+                            // Формируем фамилию и инициалы
+                            const shortName = `${user.surname || user.name || ''} ${user.name && user.surname !== user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                            
                             const row = document.createElement('tr');
                             row.innerHTML = `
-                                <td>${user.name}</td>
+                                <td>${shortName}</td>
                                 <td>${user.department || ''}</td>
                                 <td>${user.phone || ''}</td>
                                 <td>${user.email || ''}</td>

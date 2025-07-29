@@ -253,8 +253,8 @@
                     }
                     
                     data.users.forEach(user => {
-                        // Формируем полное имя из surname, name, middle_name
-                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        // Формируем фамилию и инициалы
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
                         
                         const row = document.createElement('tr');
                         row.innerHTML = `
@@ -266,7 +266,7 @@
                                     <div class="contact-photo-placeholder" style="display: none;">
                                         ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
                                     </div>
-                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${fullName}</a>
+                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${shortName}</a>
                                 </div>
                             </td>
                             <td>${user.phone_number || ''}</td>
@@ -277,7 +277,7 @@
                             <td class="actions-cell">
                                 <div class="actions-wrapper">
                                     <span class="icon-edit" title="Редактировать" onclick="openEditUserModal('${user.email}', '${division}')"></span>
-                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${fullName}')"></span>
+                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${shortName}')"></span>
                                 </div>
                             </td>
                         `;
@@ -687,8 +687,8 @@
                                 
                                 if (data.status === 'Ok' && data.users && data.users.length > 0) {
                                     data.users.forEach(user => {
-                                        // Формируем полное имя из surname, name, middle_name
-                                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                                        // Формируем фамилию и инициалы
+                                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
                                         
                                         const row = document.createElement('tr');
                                         row.innerHTML = `
@@ -700,7 +700,7 @@
                                                     <div class="contact-photo-placeholder" style="display: none;">
                                                         ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
                                                     </div>
-                                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${fullName}</a>
+                                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${shortName}</a>
                                                 </div>
                                             </td>
                                             <td>${user.phone_number || ''}</td>
@@ -711,7 +711,7 @@
                                             <td class="actions-cell">
                                                 <div class="actions-wrapper">
                                                     <span class="icon-edit" title="Редактировать" onclick="openEditUserModal('${user.email}', '${division}')"></span>
-                                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${fullName}')"></span>
+                                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${shortName}')"></span>
                                                 </div>
                                             </td>
                                         `;
@@ -982,15 +982,15 @@
         let currentDeletingName = null;
 
         // Открытие модального окна удаления пользователя
-        function openDeleteUserModal(email, institute, fullName) {
+        function openDeleteUserModal(email, institute, shortName) {
             currentDeletingEmail = email;
             currentDeletingInstitute = institute;
-            currentDeletingName = fullName;
+            currentDeletingName = shortName;
             
             // Обновляем текст подтверждения
             const modalSubtitle = document.querySelector('#deleteConfirmModal .modal-subtitle');
             if (modalSubtitle) {
-                modalSubtitle.textContent = `Вы уверены, что хотите удалить контакт "${fullName}"?`;
+                modalSubtitle.textContent = `Вы уверены, что хотите удалить контакт "${shortName}"?`;
             }
             
             document.getElementById('deleteConfirmModal').style.display = 'flex';

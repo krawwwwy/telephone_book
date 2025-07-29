@@ -202,7 +202,7 @@
                 if (allTodayUsers.length > 0) {
                     // Показываем первого в главной панели
                     const mainUser = allTodayUsers[0];
-                    const mainUserName = `${mainUser.surname} ${mainUser.name} ${mainUser.middle_name || ''}`.trim();
+                    const mainUserName = `${mainUser.surname} ${mainUser.name ? mainUser.name.charAt(0) + '.' : ''}${mainUser.middle_name ? mainUser.middle_name.charAt(0) + '.' : ''}`;
                     
                     console.log('Main birthday user:', mainUserName);
                     
