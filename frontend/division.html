@@ -167,8 +167,8 @@
                             <td>${user.department || ''}</td>
                             <td class="actions-cell">
                                 <div class="actions-wrapper">
-                                    <span class="icon-edit" title="Редактировать"></span>
-                                    <span class="icon-delete" title="Удалить"></span>
+                                    <span class="icon-edit" title="Редактировать" onclick="openEditUserModal('${user.email}', '${division}')"></span>
+                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${fullName}')"></span>
                                 </div>
                             </td>
                         `;
@@ -545,12 +545,20 @@
                     }
                     
                     console.log('Отправляем данные с фотографией');
+
+                    // Проверяем наличие токена авторизации
+                    const authToken = localStorage.getItem('authToken');
+                    if (!authToken) {
+                        alert('Для добавления контакта необходимо авторизоваться');
+                        window.location.href = 'login.html';
+                        return;
+                    }
                     
                     try {
                         const response = await fetch(`${API_BASE}/workers/with-photo`, {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                'Authorization': `Bearer ${authToken}`
                                 // НЕ устанавливаем Content-Type для FormData - браузер сделает это автоматически
                             },
                             body: formData
@@ -583,13 +591,21 @@
                     
             const formData = new FormData(e.target);
                     const departmentName = formData.get('name') || e.target.querySelector('input[type="text"]').value;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для добавления отдела необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
                     
             try {
                         const response = await fetch(`${API_BASE}/departments`, {
                     method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                'Authorization': `Bearer ${authToken}`
                             },
                             body: JSON.stringify({
                                 name: departmentName,
@@ -621,12 +637,20 @@
                     e.preventDefault();
                     const formData = new FormData(e.target);
                     formData.append('institute', division);
+
+                    // Проверяем наличие токена авторизации
+                    const authToken = localStorage.getItem('authToken');
+                    if (!authToken) {
+                        alert('Для импорта необходимо авторизоваться');
+                        window.location.href = 'login.html';
+                        return;
+                    }
                     
                     try {
                         const response = await fetch(`${API_BASE}/workers/import`, {
                             method: 'POST',
                             headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                'Authorization': `Bearer ${authToken}`
                             },
                             body: formData
                 });
@@ -878,7 +902,7 @@
 
             <div class="modal-buttons">
                 <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
-                <button class="submit-btn" onclick="confirmDelete()">Удалить</button>
+                <button class="submit-btn" onclick="confirmDeleteUser()">Удалить</button>
             </div>
         </div>
     </div>
@@ -925,6 +949,31 @@
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования пользователя -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeEditUserModal()">&times;</span>
+            <h2>Редактировать сотрудника</h2>
+            <form id="editUserForm">
+                <input type="text" id="editUserSurname" placeholder="Фамилия" required>
+                <input type="text" id="editUserName" placeholder="Имя" required>
+                <input type="text" id="editUserMiddleName" placeholder="Отчество">
+                <input type="email" id="editUserEmail" placeholder="Email" required>
+                <input type="tel" id="editUserPhone" placeholder="Телефон" required>
+                <input type="text" id="editUserCabinet" placeholder="Кабинет">
+                <input type="text" id="editUserPosition" placeholder="Должность">
+                <input type="text" id="editUserDepartment" placeholder="Отдел">
+                <input type="text" id="editUserSection" placeholder="Подотдел">
+                <input type="date" id="editUserBirthday" placeholder="Дата рождения">
+                <textarea id="editUserDescription" placeholder="Описание" rows="3"></textarea>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" onclick="closeEditUserModal()">Отмена</button>
+                    <button type="submit" class="submit-btn">Сохранить</button>
                 </div>
             </form>
         </div>
@@ -1001,6 +1050,215 @@
         window.addEventListener("DOMContentLoaded", () => {
             paginateTable();
         });
+
+        // Переменные для редактирования пользователя
+        let currentEditingUser = null;
+        let currentEditingInstitute = null;
+
+        // Переменные для удаления пользователя
+        let currentDeletingEmail = null;
+        let currentDeletingInstitute = null;
+        let currentDeletingName = null;
+
+        // Открытие модального окна удаления пользователя
+        function openDeleteUserModal(email, institute, fullName) {
+            currentDeletingEmail = email;
+            currentDeletingInstitute = institute;
+            currentDeletingName = fullName;
+            
+            // Обновляем текст подтверждения
+            const modalSubtitle = document.querySelector('#deleteConfirmModal .modal-subtitle');
+            if (modalSubtitle) {
+                modalSubtitle.textContent = `Вы уверены, что хотите удалить контакт "${fullName}"?`;
+            }
+            
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+
+        // Подтверждение удаления пользователя
+        async function confirmDeleteUser() {
+            if (!currentDeletingEmail || !currentDeletingInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers?email=${encodeURIComponent(currentDeletingEmail)}&institute=${currentDeletingInstitute}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Сотрудник успешно удален');
+                    closeDeleteModal();
+                    // Перезагружаем список сотрудников
+                    loadAllWorkers();
+                } else {
+                    alert('Ошибка при удалении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении сотрудника:', error);
+                alert('Ошибка при удалении сотрудника');
+            }
+            
+            // Очищаем переменные
+            currentDeletingEmail = null;
+            currentDeletingInstitute = null;
+            currentDeletingName = null;
+        }
+
+        // Закрытие модального окна удаления
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            currentDeletingEmail = null;
+            currentDeletingInstitute = null;
+            currentDeletingName = null;
+        }
+
+        // Открытие модального окна редактирования пользователя
+        async function openEditUserModal(email, institute) {
+            try {
+                // Загружаем данные пользователя
+                const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(email)}?institute=${institute}`);
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.user) {
+                    const user = data.user;
+                    currentEditingUser = user;
+                    currentEditingInstitute = institute;
+                    
+                    // Заполняем форму данными пользователя
+                    document.getElementById('editUserSurname').value = user.surname || '';
+                    document.getElementById('editUserName').value = user.name || '';
+                    document.getElementById('editUserMiddleName').value = user.middle_name || '';
+                    document.getElementById('editUserEmail').value = user.email || '';
+                    document.getElementById('editUserPhone').value = user.phone_number || '';
+                    document.getElementById('editUserCabinet').value = user.cabinet || '';
+                    document.getElementById('editUserPosition').value = user.position || '';
+                    document.getElementById('editUserDepartment').value = user.department || '';
+                    document.getElementById('editUserSection').value = user.section || '';
+                    document.getElementById('editUserDescription').value = user.description || '';
+                    
+                    // Форматируем дату рождения для input[type="date"]
+                    if (user.birth_date && user.birth_date !== '0001-01-01T00:00:00Z') {
+                        const birthDate = new Date(user.birth_date);
+                        const formattedDate = birthDate.toISOString().split('T')[0];
+                        document.getElementById('editUserBirthday').value = formattedDate;
+                    } else {
+                        document.getElementById('editUserBirthday').value = '';
+                    }
+                    
+                    document.getElementById('editUserModal').style.display = 'flex';
+                } else {
+                    alert('Ошибка загрузки данных пользователя');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки пользователя:', error);
+                alert('Ошибка загрузки данных пользователя');
+            }
+        }
+
+        // Закрытие модального окна редактирования пользователя
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+            currentEditingUser = null;
+            currentEditingInstitute = null;
+        }
+
+        // Обработчик формы редактирования пользователя
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentEditingUser || !currentEditingInstitute) {
+                alert('Ошибка: данные пользователя не загружены');
+                return;
+            }
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const formData = {
+                    institute: currentEditingInstitute,
+                    old_email: currentEditingUser.email,
+                    surname: document.getElementById('editUserSurname').value.trim(),
+                    name: document.getElementById('editUserName').value.trim(),
+                    middle_name: document.getElementById('editUserMiddleName').value.trim(),
+                    email: document.getElementById('editUserEmail').value.trim(),
+                    phone_number: document.getElementById('editUserPhone').value.trim(),
+                    cabinet: document.getElementById('editUserCabinet').value.trim(),
+                    position: document.getElementById('editUserPosition').value.trim(),
+                    department: document.getElementById('editUserDepartment').value.trim(),
+                    section: document.getElementById('editUserSection').value.trim(),
+                    description: document.getElementById('editUserDescription').value.trim()
+                };
+                
+                // Добавляем дату рождения если указана
+                const birthDate = document.getElementById('editUserBirthday').value;
+                if (birthDate) {
+                    formData.birth_date = new Date(birthDate).toISOString();
+                }
+                
+                console.log('Отправляем данные для обновления:', formData);
+                
+                const response = await fetch(`${API_BASE}/workers`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+                
+                if (result.status === 'Ok') {
+                    alert('Сотрудник успешно обновлен');
+                    closeEditUserModal();
+                    // Перезагружаем список сотрудников
+                    loadAllWorkers();
+                } else {
+                    alert('Ошибка при обновлении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении сотрудника:', error);
+                alert('Ошибка при обновлении сотрудника: ' + error.message);
+            }
+        });
+
+        // Закрытие модальных окон при клике вне их
+        window.onclick = function (event) {
+            if (event.target === document.getElementById("addContactModal")) {
+                closeAddContactModal();
+            }
+            if (event.target === document.getElementById("addDepartmentModal")) {
+                closeAddDepartmentModal();
+            }
+            if (event.target === document.getElementById("importModal")) {
+                closeImportModal();
+            }
+            if (event.target === document.getElementById("editUserModal")) {
+                closeEditUserModal();
+            }
+            if (event.target === document.getElementById("deleteConfirmModal")) {
+                closeDeleteModal();
+            }
+        };
     </script>
 
 </body>

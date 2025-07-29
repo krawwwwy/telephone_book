@@ -280,6 +280,14 @@
         // Сохранение изменений пользователя
         async function saveUserChanges() {
             if (!currentUser || !currentInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
             
             try {
                 // Собираем данные из формы
@@ -310,7 +318,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify(formData)
                 });
@@ -383,12 +391,20 @@
 
         async function confirmDeleteContact() {
             if (!currentUser || !currentInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
             
             try {
                 const response = await fetch(`${API_BASE}/workers?email=${encodeURIComponent(currentUser.email)}&institute=${currentInstitute}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        'Authorization': `Bearer ${authToken}`
                     }
                 });
                 
