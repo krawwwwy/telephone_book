@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS main
     email        TEXT  UNIQUE
 );
 
+CREATE SCHEMA IF NOT EXISTS grafit;
 SET search_path TO grafit;
 
 CREATE TABLE IF NOT EXISTS workers
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS sections
     FOREIGN KEY (parent_id) REFERENCES departments(id) ON DELETE CASCADE
 );
 
+CREATE SCHEMA IF NOT EXISTS giredmet;
 SET search_path TO giredmet;
 
 CREATE TABLE IF NOT EXISTS workers
