@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 # Собираем бинарник
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o telephone-book ./cmd/telephone_book
 
-FROM golang:1.21-alpine
+FROM golang:1.24-alpine
 
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /app
