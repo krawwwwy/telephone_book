@@ -74,6 +74,10 @@ github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwA
 github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8HmY=
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/krawwwwy/protos/gen/go/sso v0.0.0-20250731203856-9765e1acedb7 h1:Zsi5Vzd1BoU0jpiK3GYMe63mw8kErHJo/KfHpklMsqI=
+github.com/krawwwwy/protos/gen/go/sso v0.0.0-20250731203856-9765e1acedb7/go.mod h1:7IapbcYacWV6d3GqnIq2ObV3B+6LQSasH8wSzcKN2DM=
+github.com/krawwwwy/rosatomprotos v0.0.1 h1:EQwudkb/hz8rlxPJ95c2QchngfitCM++c12C5cm6yLk=
+github.com/krawwwwy/rosatomprotos v0.0.1/go.mod h1:iSZpcc5RU4aOBGAqcOS3SxaZywdEMYoWRlApURJ00+k=
 github.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=
 github.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=
 github.com/lib/pq v1.10.9 h1:YXG7RB+JIjhP29X+OtkiDnYaXQwpS4JEWq7dtCCRUEw=

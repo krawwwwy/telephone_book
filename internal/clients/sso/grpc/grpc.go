@@ -8,7 +8,7 @@ import (
 
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
-	ssov1 "github.com/krawwwwy/protos/gen/go/sso"
+	ssov1 "github.com/krawwwwy/rosatomprotos"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
