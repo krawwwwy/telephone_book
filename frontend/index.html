@@ -410,12 +410,14 @@
             carouselStates[type].currentIndex = index;
         }
 
+
         function nextCard(type) {
             const state = carouselStates[type];
             const nextIndex = (state.currentIndex + 1) % state.totalCards;
             showCard(type, nextIndex);
             resetAutoSlide(type);
         }
+
 
         function prevCard(type) {
             const state = carouselStates[type];
