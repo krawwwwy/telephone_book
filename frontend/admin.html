@@ -18,9 +18,6 @@
             <h1 onclick="location.href='index.html'">Телефонный справочник</h1>
         </div>
         <div class="header-right">
-            <a href="admin.html" class="btn-primary">
-                Админ-панель
-            </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
         </div>
     </header>
@@ -29,7 +26,7 @@
         <button class="btn-secondary" onclick="window.history.back()">Вернуться</button>
         <h1>Панель Администратора</h1>
         <div class="admin-buttons">
-            <button class="add-btn" onclick="openModal('addUserModal')">Создать пользователя</button>
+            <button class="add-btn" onclick="openModal('addUserModal')">Создать пользователя системы</button>
             <button class="add-btn" onclick="openModal('addDepartmentModal')">Добавить отдел</button>
         </div>
 
@@ -37,15 +34,11 @@
             <h2>Редактирование отделов</h2>
             <div class="division-tabs">
                 <button class="division-tab active" data-division="giredmet">Гиредмет</button>
-                <button class="division-tab" data-division="graphite">Графит</button>
+                <button class="division-tab" data-division="grafit">Графит</button>
             </div>
 
             <div class="departments-editor">
                 <div class="departments-list" id="departmentsList"></div>
-                <div class="department-actions">
-                    <button class="edit-btn" id="editDeptBtn">Редактировать</button>
-                    <button class="delete-btn" id="deleteDeptBtn">Удалить</button>
-                </div>
             </div>
         </div>
     </div>
@@ -56,31 +49,31 @@
 
     <div id="addUserModal" class="modal">
         <div class="modal-content">
-            <h2>Добавление пользователя</h2>
-            <p class="modal-subtitle">Введите учетные данные</p>
+            <h2>Создание пользователя системы</h2>
+            <p class="modal-subtitle">Создание учетной записи для входа в систему</p>
 
-            <input type="text" placeholder="Логин" class="auth-input">
-            <input type="password" placeholder="Пароль" class="auth-input" autocomplete="new-password">
+            <input type="text" placeholder="Email (логин)*" class="auth-input">
+            <input type="password" placeholder="Пароль*" class="auth-input" autocomplete="new-password">
 
             <div class="role-selection">
-                <p class="role-title">Выберите роль:</p>
+                <p class="role-title">Выберите роль пользователя:</p>
                 <div class="role-options">
                     <label class="role-option">
                         <input type="radio" name="userRole" value="user" checked>
                         <span class="role-checkmark"></span>
-                        <span class="role-label">Пользователь</span>
+                        <span class="role-label">Пользователь (может просматривать данные)</span>
                     </label>
 
                     <label class="role-option">
                         <input type="radio" name="userRole" value="admin">
                         <span class="role-checkmark"></span>
-                        <span class="role-label">Администратор</span>
+                        <span class="role-label">Администратор (полный доступ)</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="cancel-btn" onclick="closeModal('addUserModal')">Отмена</button>
-                <button type="submit" class="submit-btn" onclick="submitUser()">Создать</button>
+                <button type="submit" class="submit-btn" onclick="submitUser()">Создать пользователя</button>
             </div>
         </div>
     </div>
@@ -90,11 +83,11 @@
             <h2>Добавление отдела</h2>
             <p class="modal-subtitle">Заполните поля</p>
             <div class="form-group">
-                <input type="text" placeholder="Название отдела*" class="form-input" required>
+                <input type="text" placeholder="Название отдела*" id="departmentName" class="form-input" required>
             </div>
 
             <div class="form-group">
-                <input type="text" placeholder="Институт*" class="form-input" required>
+                <input type="text" placeholder="Институт*" id="instituteName" class="form-input" required>
             </div>
 
             <div class="subdepartments-section">
@@ -156,265 +149,732 @@
     </div>
 
     <script>
-        const departments = {
-            giredmet: {
-                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
-                "Коммуникации": ["Внутренние связи", "Внешние связи"],
-                "Коммерческий": [],
-                "Бухгалтерия": []
-            },
-            graphite: {
-                "Проектный": ["Подготовка", "Реализация"],
-                "Логистика": [],
-                "Финансовый контроль": ["Аудит", "Бюджетирование"],
-                "Отдел кадров": ["Подбор", "HR-аналитика"]
-            }
-        };
+        const API_BASE = 'http://localhost:8080';
 
-        let currentDivision = 'giredmet';
-        let selectedDepartment = null;
-        const elements = {
-            departmentsList: document.getElementById('departmentsList'),
-            editDeptBtn: document.getElementById('editDeptBtn'),
-            deleteDeptBtn: document.getElementById('deleteDeptBtn'),
-            divisionTabs: document.querySelectorAll('.division-tab')
-        };
+        // Переменные для редактирования и удаления отделов
+        let currentEditingDepartment = null;
+        let currentEditingInstitute = null;
+        let currentDeletingDepartment = null;
+        let currentDeletingInstitute = null;
 
-        function init() {
-            loadDepartments(currentDivision);
-            setupEventListeners();
+        // Функции для работы с модальными окнами
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
         }
 
-        function loadDepartments(division) {
-            currentDivision = division;
-            selectedDepartment = null;
-            elements.departmentsList.innerHTML = '';
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Очищаем формы при закрытии
+            if (modalId === 'addDepartmentModal') {
+                clearDepartmentForm();
+            } else if (modalId === 'editDepartmentModal') {
+                // Очищаем переменные редактирования
+                currentEditingDepartment = null;
+                currentEditingInstitute = null;
+                document.getElementById('editDeptName').value = '';
+                document.getElementById('editSubdepartmentsList').innerHTML = '';
+            } else if (modalId === 'deleteDepartmentModal') {
+                // Очищаем переменные удаления
+                currentDeletingDepartment = null;
+                currentDeletingInstitute = null;
+            } else if (modalId === 'addUserModal') {
+                // Очищаем форму создания пользователя
+                const modal = document.getElementById('addUserModal');
+                modal.querySelector('input[type="text"]').value = '';
+                modal.querySelector('input[type="password"]').value = '';
+                modal.querySelector('input[name="userRole"][value="user"]').checked = true;
+            }
+        }
 
-            elements.divisionTabs.forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.division === division);
-            });
+        // Очистка формы добавления отдела
+        function clearDepartmentForm() {
+            document.getElementById('departmentName').value = '';
+            document.getElementById('instituteName').value = '';
+            
+            // Очищаем список подотделов
+            document.getElementById('subdepartmentsList').innerHTML = '';
+        }
 
-            Object.entries(departments[division]).forEach(([dept, subdepts]) => {
-                const deptElement = document.createElement('div');
-                deptElement.className = 'department-item';
-                deptElement.textContent = dept;
-                deptElement.dataset.dept = dept;
+        // Добавление поля для подотдела
+        function addSubdepartmentField(isEdit = false) {
+            const container = isEdit ? 
+                document.getElementById('editSubdepartmentsList') : 
+                document.getElementById('subdepartmentsList');
+            
+            const subdepartmentDiv = document.createElement('div');
+            subdepartmentDiv.className = 'subdepartment-field';
+            subdepartmentDiv.innerHTML = `
+                <input type="text" placeholder="Название подотдела" class="form-input subdepartment-input">
+                <button type="button" class="remove-subdepartment-btn" onclick="removeSubdepartmentField(this)">
+                    <span>−</span> Удалить
+                </button>
+            `;
+            
+            container.appendChild(subdepartmentDiv);
+        }
 
-                if (subdepts.length > 0) {
-                    const subCount = document.createElement('span');
-                    subCount.className = 'subdepartment-count';
-                    subCount.textContent = ` (${subdepts.length})`;
-                    deptElement.appendChild(subCount);
+        // Удаление поля подотдела
+        function removeSubdepartmentField(button) {
+            button.parentElement.remove();
+        }
+
+        // Отправка данных для создания отдела
+        async function submitDepartment() {
+            const modal = document.getElementById('addDepartmentModal');
+            const inputs = modal.querySelectorAll('.form-input');
+            
+            const departmentName = inputs[0].value.trim();
+            const institute = inputs[1].value.trim();
+            
+            // Валидация
+            if (!departmentName) {
+                alert('Пожалуйста, введите название отдела');
+                return;
+            }
+            
+            if (!institute) {
+                alert('Пожалуйста, введите институт');
+                return;
+            }
+
+            // Собираем подотделы
+            const subdepartmentInputs = modal.querySelectorAll('.subdepartment-input');
+            const sections = Array.from(subdepartmentInputs)
+                .map(input => input.value.trim())
+                .filter(value => value.length > 0);
+
+            const requestData = {
+                name: departmentName,
+                institute: institute,
+                sections: sections
+            };
+
+            console.log('Отправляем данные для создания отдела:', requestData);
+
+            // Проверяем токен авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для создания отдела необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/departments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно создан');
+                    closeModal('addDepartmentModal');
+                    // Перезагружаем список отделов для текущего института
+                    const activeTab = document.querySelector('.division-tab.active');
+                    if (activeTab) {
+                        const currentInstitute = activeTab.getAttribute('data-division');
+                        loadDepartments(currentInstitute);
+                    }
+                } else {
+                    alert('Ошибка при создании отдела: ' + (result.error || 'Неизвестная ошибка'));
                 }
-
-                elements.departmentsList.appendChild(deptElement);
-            });
+            } catch (error) {
+                console.error('Ошибка при создании отдела:', error);
+                alert('Ошибка при создании отдела: ' + error.message);
+            }
         }
 
-        function setupEventListeners() {
-            elements.departmentsList.addEventListener('click', (e) => {
-                const deptElement = e.target.closest('.department-item');
-                if (!deptElement) return;
+        // Создание пользователя системы
+        async function submitUser() {
+            const modal = document.getElementById('addUserModal');
+            const loginInput = modal.querySelector('input[type="text"]');
+            const passwordInput = modal.querySelector('input[type="password"]');
+            const selectedRole = modal.querySelector('input[name="userRole"]:checked');
 
-                selectedDepartment = deptElement.dataset.dept;
-                document.querySelectorAll('.department-item').forEach(item => {
-                    item.classList.toggle('selected', item === deptElement);
-                });
-            });
-
-            elements.divisionTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    loadDepartments(tab.dataset.division);
-                });
-            });
-
-            elements.editDeptBtn.addEventListener('click', editSelectedDepartment);
-            elements.deleteDeptBtn.addEventListener('click', deleteSelectedDepartment);
-        }
-
-        function editSelectedDepartment() {
-            if (!selectedDepartment) {
-                alert('Выберите отдел для редактирования');
+            // Валидация
+            if (!loginInput.value.trim()) {
+                alert('Пожалуйста, введите логин пользователя');
                 return;
             }
 
-            const modal = document.getElementById('editDepartmentModal');
-            document.getElementById('editDeptName').value = selectedDepartment;
-
-            const subList = document.getElementById('editSubdepartmentsList');
-            subList.innerHTML = '';
-
-            departments[currentDivision][selectedDepartment].forEach(subDept => {
-                addSubdepartmentField(true, subDept);
-            });
-
-            modal.style.display = 'flex';
-        }
-
-        function deleteSelectedDepartment() {
-            if (!selectedDepartment) {
-                alert('Выберите отдел для удаления');
+            if (!passwordInput.value.trim()) {
+                alert('Пожалуйста, введите пароль');
                 return;
             }
 
-            document.getElementById('deptNameToDelete').textContent = selectedDepartment;
+            if (passwordInput.value.length < 6) {
+                alert('Пароль должен содержать минимум 6 символов');
+                return;
+            }
+
+            if (!selectedRole) {
+                alert('Пожалуйста, выберите роль пользователя');
+                return;
+            }
+
+            // Проверка email формата
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(loginInput.value.trim())) {
+                alert('Пожалуйста, введите корректный email адрес');
+                return;
+            }
+
+            const requestData = {
+                email: loginInput.value.trim(),
+                password: passwordInput.value,
+                role: selectedRole.value
+            };
+
+            console.log('Создаем пользователя системы:', { ...requestData, password: '***' });
+
+            // Проверяем токен авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для создания пользователя необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера при создании пользователя:', result);
+
+                if (result.status === 'Ok') {
+                    alert(`Пользователь системы успешно создан!\nEmail: ${requestData.email}\nРоль: ${requestData.role === 'admin' ? 'Администратор' : 'Пользователь'}\nUser ID: ${result.user_id}`);
+                    closeModal('addUserModal');
+                    
+                    // Очищаем форму
+                    loginInput.value = '';
+                    passwordInput.value = '';
+                    modal.querySelector('input[name="userRole"][value="user"]').checked = true;
+                } else {
+                    alert('Ошибка при создании пользователя: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при создании пользователя:', error);
+                alert('Ошибка при создании пользователя: ' + error.message);
+            }
+        }
+
+        // Загрузка отделов для админ-панели
+        async function loadDepartments(institute = 'giredmet') {
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                console.log(`Отделы для ${institute}:`, data);
+                
+                const departmentsList = document.getElementById('departmentsList');
+                departmentsList.innerHTML = '';
+                
+                if (data.status === 'Ok' && data.departments) {
+                    data.departments.forEach(async dept => {
+                        const deptDiv = document.createElement('div');
+                        deptDiv.className = 'department-item admin-dept-item';
+                        
+                        // Загружаем информацию о подотделах
+                        let sectionsInfo = '';
+                        try {
+                            const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                            const sectionsData = await sectionsResponse.json();
+                            if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                                const sectionsCount = sectionsData.sections.length;
+                                sectionsInfo = sectionsCount > 0 ? ` (${sectionsCount} подотдел${sectionsCount === 1 ? '' : sectionsCount < 5 ? 'а' : 'ов'})` : '';
+                            }
+                        } catch (error) {
+                            console.log('Не удалось загрузить информацию о подотделах для', dept.name);
+                        }
+                        
+                        deptDiv.innerHTML = `
+                            <div class="dept-info">
+                                <div class="dept-name">${dept.name}${sectionsInfo}</div>
+                            </div>
+                            <div class="dept-actions">
+                                <button class="edit-btn" onclick="editDepartment('${dept.name}', '${institute}')">Редактировать</button>
+                                <button class="delete-btn" onclick="deleteDepartment('${dept.name}', '${institute}')">Удалить</button>
+                            </div>
+                        `;
+                        departmentsList.appendChild(deptDiv);
+                    });
+                } else {
+                    departmentsList.innerHTML = '<p>Отделы не найдены</p>';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки отделов:', error);
+                document.getElementById('departmentsList').innerHTML = '<p>Ошибка загрузки отделов</p>';
+            }
+        }
+
+        // Переключение между институтами
+        function switchInstitute(institute) {
+            // Обновляем активную вкладку
+            document.querySelectorAll('.division-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-division="${institute}"]`).classList.add('active');
+            
+            // Загружаем отделы для выбранного института
+            loadDepartments(institute);
+        }
+
+        // Обработчики для вкладок институтов
+        document.addEventListener('DOMContentLoaded', function() {
+            // Сначала проверяем доступ
+            checkAdminAccess();
+            
+            document.querySelectorAll('.division-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const institute = this.getAttribute('data-division');
+                    switchInstitute(institute);
+                });
+            });
+        });
+
+        // Закрытие модальных окон по клику вне их
+        window.onclick = function (event) {
+            const modals = ['addUserModal', 'addDepartmentModal', 'editDepartmentModal', 'deleteDepartmentModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    closeModal(modalId);
+                }
+            });
+        };
+        
+        // Загрузка всех пользователей
+        async function loadAllUsers() {
+            try {
+                const institutes = ['giredmet', 'grafit'];
+                const tbody = document.querySelector('.admin-table tbody');
+                
+                // Проверяем, существует ли таблица пользователей
+                if (!tbody) {
+                    console.log('Таблица пользователей не найдена в админ-панели - пропускаем загрузку');
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                
+                for (const institute of institutes) {
+                    const response = await fetch(`${API_BASE}/workers/all?institute=${institute}&department=`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.status === 'Ok' && data.users) {
+                        data.users.forEach(user => {
+                            // Формируем фамилию и инициалы
+                            const shortName = `${user.surname || user.name || ''} ${user.name && user.surname !== user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${shortName}</td>
+                                <td>${user.department || ''}</td>
+                                <td>${user.phone || ''}</td>
+                                <td>${user.email || ''}</td>
+                                <td>${user.cabinet || ''}</td>
+                                <td>
+                                    <button class="edit-btn" onclick="editUser('${user.email}', '${institute}')">Редактировать</button>
+                                    <button class="delete-btn" onclick="deleteUser('${user.email}', '${institute}')">Удалить</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки пользователей:', error);
+            }
+        }
+
+        // Удаление пользователя
+        async function deleteUser(email, institute) {
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/workers?institute=${institute}&email=${encodeURIComponent(email)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Пользователь удален');
+                    loadAllUsers(); // Перезагружаем список
+                } else {
+                    alert('Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении пользователя:', error);
+                alert('Ошибка при удалении пользователя');
+            }
+        }
+
+        // Редактирование пользователя (заглушка)
+        function editUser(email, institute) {
+            alert(`Редактирование пользователя ${email} из ${institute} (функция в разработке)`);
+        }
+
+        // Поиск пользователей
+        const searchElement = document.getElementById('search');
+        if (searchElement) {
+            searchElement.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.admin-table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+        }
+
+        // Обработка импорта файла
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const institute = document.getElementById('instituteSelect').value;
+            formData.append('institute', institute);
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Импорт завершён успешно');
+                    loadAllUsers(); // Перезагружаем список
+                } else {
+                    alert('Ошибка импорта: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (err) {
+                alert('Ошибка при импорте файла');
+                console.error(err);
+            }
+        });
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
+                const fileNameSpan = document.getElementById('fileName');
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
+                }
+            });
+        }
+
+        // Загружаем данные при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAccess();
+        });
+
+        // Проверка доступа администратора
+        async function checkAdminAccess() {
+            const authToken = localStorage.getItem('authToken');
+            
+            if (!authToken) {
+                alert('Для доступа к админ-панели необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    alert('Ошибка проверки авторизации');
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.role === 'admin') {
+                    // Пользователь администратор, загружаем данные
+                    loadAllUsers();
+                    loadDepartments('giredmet');
+                    // Обновляем header после успешной проверки
+                    updateHeaderButtons();
+                } else {
+                    alert('Доступ запрещен. Требуются права администратора.');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                alert('Ошибка проверки доступа');
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                if (data.status === 'Ok') {
+                    return { email: data.email, role: data.role };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка получения информации о пользователе:', error);
+                return null;
+            }
+        }
+
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = userInfo.role;
+                        }
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Ошибка обновления header:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Выход из системы
+        function logout() {
+            localStorage.removeItem('authToken');
+            window.location.reload();
+        }
+
+        // Редактирование отдела
+        async function editDepartment(name, institute) {
+            currentEditingDepartment = name;
+            currentEditingInstitute = institute;
+            
+            try {
+                // Загружаем данные отдела (секции)
+                const response = await fetch(`${API_BASE}/departments/${encodeURIComponent(name)}?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                // Заполняем форму
+                document.getElementById('editDeptName').value = name;
+                
+                // Очищаем список секций и добавляем существующие
+                const editSubdepartmentsList = document.getElementById('editSubdepartmentsList');
+                editSubdepartmentsList.innerHTML = '';
+                
+                if (data.status === 'Ok' && data.sections) {
+                    data.sections.forEach(section => {
+                        const subdepartmentDiv = document.createElement('div');
+                        subdepartmentDiv.className = 'subdepartment-field';
+                        subdepartmentDiv.innerHTML = `
+                            <input type="text" placeholder="Название подотдела" class="form-input subdepartment-input" value="${section.name}">
+                            <button type="button" class="remove-subdepartment-btn" onclick="removeSubdepartmentField(this)">
+                                <span>−</span> Удалить
+                            </button>
+                        `;
+                        editSubdepartmentsList.appendChild(subdepartmentDiv);
+                    });
+                }
+                
+                openModal('editDepartmentModal');
+            } catch (error) {
+                console.error('Ошибка загрузки данных отдела:', error);
+                alert('Ошибка загрузки данных отдела');
+            }
+        }
+
+        // Сохранение изменений отдела
+        async function saveDepartmentChanges() {
+            if (!currentEditingDepartment || !currentEditingInstitute) {
+                alert('Ошибка: данные отдела не загружены');
+                return;
+            }
+
+            const newName = document.getElementById('editDeptName').value.trim();
+            if (!newName) {
+                alert('Пожалуйста, введите название отдела');
+                return;
+            }
+
+            // Собираем подотделы
+            const subdepartmentInputs = document.querySelectorAll('#editSubdepartmentsList .subdepartment-input');
+            const sections = Array.from(subdepartmentInputs)
+                .map(input => input.value.trim())
+                .filter(value => value.length > 0);
+
+            const requestData = {
+                name: newName,
+                sections: sections
+            };
+
+            console.log('Отправляем данные для обновления отдела:', requestData);
+
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования отдела необходимо авторизоваться');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(currentEditingInstitute)}&department=${encodeURIComponent(currentEditingDepartment)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно обновлен');
+                    closeModal('editDepartmentModal');
+                    // Перезагружаем список отделов
+                    loadDepartments(currentEditingInstitute);
+                } else {
+                    alert('Ошибка при обновлении отдела: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении отдела:', error);
+                alert('Ошибка при обновлении отдела: ' + error.message);
+            }
+        }
+
+        // Удаление отдела
+        function deleteDepartment(name, institute) {
+            currentDeletingDepartment = name;
+            currentDeletingInstitute = institute;
+            
+            // Обновляем текст подтверждения
+            document.getElementById('deptNameToDelete').textContent = name;
+            
             openModal('deleteDepartmentModal');
         }
 
-        function confirmDepartmentDeletion() {
-            delete departments[currentDivision][selectedDepartment];
-            loadDepartments(currentDivision);
-            closeModal('deleteDepartmentModal');
-            showNotification(`Отдел "${selectedDepartment}" успешно удален`);
-        }
+        // Подтверждение удаления отдела
+        async function confirmDepartmentDeletion() {
+            if (!currentDeletingDepartment || !currentDeletingInstitute) {
+                alert('Ошибка: данные отдела не загружены');
+                return;
+            }
 
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            document.body.appendChild(notification);
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления отдела необходимо авторизоваться');
+                return;
+            }
 
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
+            try {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(currentDeletingInstitute)}&department=${encodeURIComponent(currentDeletingDepartment)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
 
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-        }
-        function closeModal(id) {
-            const modal = document.getElementById(id);
-            modal.style.display = 'none';
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
 
-            const inputs = modal.querySelectorAll('input');
-            inputs.forEach(input => {
-                if (input.type !== 'radio' && input.type !== 'checkbox') {
-                    input.value = '';
+                if (result.status === 'Ok') {
+                    alert('Отдел успешно удален');
+                    closeModal('deleteDepartmentModal');
+                    // Перезагружаем список отделов
+                    loadDepartments(currentDeletingInstitute);
                 } else {
-                    input.checked = false;
+                    alert('Ошибка при удалении отдела: ' + (result.error || 'Неизвестная ошибка'));
                 }
-            });
-
-            const defaultRadio = modal.querySelector('input[type="radio"][value="user"]');
-            if (defaultRadio) {
-                defaultRadio.checked = true;
+            } catch (error) {
+                console.error('Ошибка при удалении отдела:', error);
+                alert('Ошибка при удалении отдела: ' + error.message);
             }
+
+            // Очищаем переменные
+            currentDeletingDepartment = null;
+            currentDeletingInstitute = null;
         }
 
-        function submitUser() {
-            alert('Пользователь создан. (Заглушка, подключим API позже)');
-            closeModal('addUserModal');
-        }
-
-        function submitDepartment() {
-            alert('Отдел добавлен. (Заглушка, подключим API позже)');
-            closeModal('addDepartmentModal');
-        }
-
-        function addSubdepartmentField(subdepartmentName = '') {
-            const subdepartmentsList = document.getElementById('subdepartmentsList');
-
-            const subdepartmentId = Date.now();
-
-            const subdepartmentItem = document.createElement('div');
-            subdepartmentItem.className = 'subdepartment-item';
-            subdepartmentItem.dataset.id = subdepartmentId;
-
-            subdepartmentItem.innerHTML = `
-        <input 
-            type="text" 
-            placeholder="Название подотдела" 
-            class="subdepartment-input"
-            value="${subdepartmentName}"
-            data-id="${subdepartmentId}"
-        >
-        <button 
-            type="button" 
-            class="remove-subdepartment-btn"
-            onclick="removeSubdepartmentField('${subdepartmentId}')"
-        >×</button>
-    `;
-
-            subdepartmentsList.appendChild(subdepartmentItem);
-        }
-
-        function removeSubdepartmentField(id) {
-            const element = document.querySelector(`.subdepartment-item[data-id="${id}"]`);
-            if (element) {
-                element.remove();
-            }
-        }
-
-        function submitDepartment() {
-            const departmentName = document.querySelector('#addDepartmentModal .form-input[placeholder="Название отдела*"]').value;
-            const branch = document.querySelector('#addDepartmentModal .form-input[placeholder="Филиал / Институт*"]').value;
-
-            const subdepartments = [];
-            document.querySelectorAll('.subdepartment-input').forEach(input => {
-                if (input.value.trim() !== '') {
-                    subdepartments.push(input.value.trim());
-                }
-            });
-
-            console.log('Создание отдела:', {
-                departmentName,
-                branch,
-                subdepartments
-            });
-
-            alert(`Отдел "${departmentName}" создан. Подотделы: ${subdepartments.join(', ') || 'нет'}`);
-            closeModal('addDepartmentModal');
-        }
-
-        function closeModal(id) {
-            const modal = document.getElementById(id);
-            modal.style.display = 'none';
-
-            modal.querySelectorAll('.form-input').forEach(input => {
-                input.value = '';
-            });
-
-            const subdepartmentsList = document.getElementById('subdepartmentsList');
-            if (subdepartmentsList) {
-                subdepartmentsList.innerHTML = '';
-            }
-        }
-
-        function addSubdepartmentField(isForEditor = false, subName = '') {
-            const listId = isForEditor ? 'editSubdepartmentsList' : 'subdepartmentsList';
-            const subdepartmentsList = document.getElementById(listId);
-
-            const subdepartmentId = Date.now();
-
-            const subdepartmentItem = document.createElement('div');
-            subdepartmentItem.className = 'subdepartment-item';
-            subdepartmentItem.dataset.id = subdepartmentId;
-
-            subdepartmentItem.innerHTML = `
-        <input 
-            type="text" 
-            placeholder="Название подотдела" 
-            class="subdepartment-input"
-            value="${subName}"
-            data-id="${subdepartmentId}"
-        >
-        <button 
-            type="button" 
-            class="remove-subdepartment-btn"
-            onclick="removeSubdepartmentField('${subdepartmentId}', ${isForEditor})"
-        >×</button>`;
-
-            subdepartmentsList.appendChild(subdepartmentItem);
-        }
-
-        function removeSubdepartmentField(id, isForEditor = false) {
-            const element = document.querySelector(`.subdepartment-item[data-id="${id}"]`);
-            if (element) {
-                element.remove();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 

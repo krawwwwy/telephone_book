@@ -43,7 +43,7 @@ func (s *Storage) CreateUser(
 			birth_date, description, photo
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
-		RETURNING id,
+		RETURNING id
 		`
 
 	err := s.db.QueryRowContext(
@@ -184,25 +184,25 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		return models.EmptyUser, err
 	}
 
-	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section, birth_date, description, photo
+	query := `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section, birth_date, description
 		FROM workers WHERE email = $1`
 
 	var user models.User
+	var middleName, cabinet, position, department, section, description sql.NullString
 
 	err := s.db.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.Surname,
 		&user.Name,
-		&user.MiddleName,
+		&middleName,
 		&user.Email,
 		&user.PhoneNumber,
-		&user.Cabinet,
-		&user.Position,
-		&user.Department,
-		&user.Section,
+		&cabinet,
+		&position,
+		&department,
+		&section,
 		&user.BirthDate,
-		&user.Description,
-		&user.Photo,
+		&description,
 	)
 
 	if err != nil {
@@ -212,10 +212,18 @@ func (s *Storage) GetUserByEmail(ctx context.Context, institute string, email st
 		return models.EmptyUser, fmt.Errorf("%s: %w", op, err)
 	}
 
+	// Конвертируем NullString в обычные строки
+	user.MiddleName = middleName.String
+	user.Cabinet = cabinet.String
+	user.Position = position.String
+	user.Department = department.String
+	user.Section = section.String
+	user.Description = description.String
+
 	return user, nil
 }
 
-func (s *Storage) GetAllUsers(ctx context.Context, institute string, department string) ([]models.User, error) {
+func (s *Storage) GetAllUsers(ctx context.Context, institute string, department string, section string) ([]models.User, error) {
 	const op = "storage.postgresql.GetAllUsers"
 
 	if err := s.SetSchema(ctx, institute); err != nil {
@@ -227,13 +235,18 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
 			FROM workers ORDER BY surname, name`
-	} else {
-		// Если отдел указан, фильтруем по нему
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+	} else if section == "" {
+		// Если отдел указан, но секция нет - фильтруем по отделу
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
 			FROM workers WHERE department = $1 ORDER BY surname, name`
 		args = append(args, department)
+	} else {
+		// Если указаны и отдел, и секция - фильтруем по обоим
+		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, section
+			FROM workers WHERE department = $1 AND section = $2 ORDER BY surname, name`
+		args = append(args, department, section)
 	}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
@@ -245,21 +258,31 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	var users []models.User
 	for rows.Next() {
 		var user models.User
+		var middleName, cabinet, position, department, section sql.NullString
 
 		err := rows.Scan(
 			&user.ID,
 			&user.Surname,
 			&user.Name,
-			&user.MiddleName,
+			&middleName,
 			&user.Email,
 			&user.PhoneNumber,
-			&user.Cabinet,
-			&user.Position,
-			&user.Department,
+			&cabinet,
+			&position,
+			&department,
+			&section,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
 		}
+
+		// Конвертируем NullString в обычные строки
+		user.MiddleName = middleName.String
+		user.Cabinet = cabinet.String
+		user.Position = position.String
+		user.Department = department.String
+		user.Section = section.String
+
 		users = append(users, user)
 	}
 
@@ -268,4 +291,80 @@ func (s *Storage) GetAllUsers(ctx context.Context, institute string, department 
 	}
 
 	return users, nil
+}
+
+// GetUserPhoto получает только фотографию пользователя
+func (s *Storage) GetUserPhoto(ctx context.Context, institute string, email string) ([]byte, error) {
+	const op = "storage.postgresql.GetUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return nil, err
+	}
+
+	query := `SELECT photo FROM workers WHERE email = $1`
+
+	var photo []byte
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&photo)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, storage.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return photo, nil
+}
+
+// UpdateUserPhoto обновляет фотографию пользователя
+func (s *Storage) UpdateUserPhoto(ctx context.Context, institute string, email string, photo []byte) error {
+	const op = "storage.postgresql.UpdateUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
+	}
+
+	query := `UPDATE workers SET photo = $1 WHERE email = $2`
+
+	result, err := s.db.ExecContext(ctx, query, photo, email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return storage.ErrUserNotFound
+	}
+
+	return nil
+}
+
+// DeleteUserPhoto удаляет фотографию пользователя
+func (s *Storage) DeleteUserPhoto(ctx context.Context, institute string, email string) error {
+	const op = "storage.postgresql.DeleteUserPhoto"
+
+	if err := s.SetSchema(ctx, institute); err != nil {
+		return err
+	}
+
+	query := `UPDATE workers SET photo = NULL WHERE email = $1`
+
+	result, err := s.db.ExecContext(ctx, query, email)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("%s: failed to get rows affected: %w", op, err)
+	}
+
+	if rowsAffected == 0 {
+		return storage.ErrUserNotFound
+	}
+
+	return nil
 }

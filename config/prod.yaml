@@ -1,0 +1,12 @@
+env: "prod"
+storage_path: "postgresql://rosatom:rosatom@postgres:5432/rosatom?sslmode=disable"
+logger: "json"
+http_server:
+  address: "0.0.0.0:8080"
+  timeout: 4s
+  idle_timeout: 60s
+clients:
+  sso:
+    address: "sso:44044"
+    timeout: 10h
+    retries_count: 3 

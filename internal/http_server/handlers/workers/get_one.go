@@ -4,13 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"telephone-book/internal/domain/models"
 	"telephone-book/internal/lib/logger/sl"
 	"telephone-book/internal/storage"
 
 	resp "telephone-book/internal/lib/response"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
@@ -26,6 +27,7 @@ type GetResponse struct {
 
 type UserGetter interface {
 	GetUserByEmail(ctx context.Context, institute string, email string) (models.User, error)
+	GetUserPhoto(ctx context.Context, institute string, email string) ([]byte, error)
 }
 
 // GetByEmail возвращает работника по email
@@ -46,13 +48,27 @@ func GetByEmail(ctx context.Context, log *slog.Logger, userGetter UserGetter) ht
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
-		email := chi.URLParam(r, "email")
-		if email == "" {
+		// Получаем email из URL path, обходя проблему chi с точками в email
+		path := r.URL.Path
+		parts := strings.Split(path, "/")
+		if len(parts) < 3 {
 			msg := "email not specified"
 			log.Error(msg)
 			render.JSON(w, r, resp.Error(msg))
 			return
 		}
+
+		// Декодируем URL-encoded email
+		encodedEmail := parts[2] // /workers/{email}
+		email, err := url.QueryUnescape(encodedEmail)
+		if err != nil {
+			msg := "invalid email format"
+			log.Error(msg, sl.Err(err))
+			render.JSON(w, r, resp.Error(msg))
+			return
+		}
+
+		log.Info("processing request", slog.String("email", email))
 
 		institute := r.URL.Query().Get("institute")
 		if institute == "" {

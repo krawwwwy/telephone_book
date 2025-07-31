@@ -28,16 +28,12 @@
     <main class="main-content">
         <aside class="sidebar">
             <div class="division-links">
-                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-                <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
-            </div>
-            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
-                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+                <a href="division.html?division=giredmet" id="link-giredmet">Гиредмет</a> /
+                <a href="division.html?division=grafit" id="link-grafit">Графит</a>
             </div>
 
             <ul class="department-list" id="department-list">
             </ul>
-            <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
         </aside>
         <section class="center-panel">
             <nav class="breadcrumbs" id="breadcrumbs">
@@ -61,7 +57,6 @@
                             <th>Email</th>
                             <th>Должность</th>
                             <th>Отдел</th>
-                            <th>Подотдел</th>
                             <th>Ред.</th>
                         </tr>
                     </thead>
@@ -83,174 +78,283 @@
     </footer>
 
     <script>
+        const API_BASE = 'http://localhost:8080';
 
-        const exampleContacts = {
-            giredmet: [
-                { name: "Иванов И.И.", phone: "+7 495 111-11-11", cab: "209", email: "ivanov@giredmet.ru", position: "Инженер", department: "Инженерный", sub: "Разработка" },
-                { name: "Петров П.П.", phone: "+7 495 222-22-22", cab: "211", email: "petrov@giredmet.ru", position: "Бухгалтер", department: "Бухгалтерия", sub: "" }
-            ],
-            graphite: [
-                { name: "Сидоров С.С.", phone: "+7 495 333-33-33", cab: "308", email: "sidorov@graphite.ru", position: "Аналитик", department: "Финансовый контроль", sub: "Бюджетирование" }
-            ]
+        // Глобальный кэш для отделов и секций
+        const departmentsCache = {
+            giredmet: null,
+            grafit: null
         };
+        const sectionsCache = {};
 
-        const departments = {
-            giredmet: {
-                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
-                "Коммуникации": ["Внутренние связи", "Внешние связи"],
-                "Коммерческий": [],
-                "Бухгалтерия": []
-            },
-            graphite: {
-                "Проектный": ["Подготовка", "Реализация"],
-                "Логистика": [],
-                "Финансовый контроль": ["Аудит", "Бюджетирование"],
-                "Отдел кадров": ["Подбор", "HR-аналитика"]
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const division = urlParams.get('division') || 'giredmet';
+
+        // Загрузка всех сотрудников института
+        async function loadAllWorkers() {
+            console.log('=== НАЧАЛО loadAllWorkers ===');
+            console.log('division:', division);
+            
+            // Показываем индикатор загрузки
+            const tbody = document.querySelector('#contactsTableBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
+                            Загрузка всех сотрудников института...
+                        </td>
+                    </tr>
+                `;
             }
-        };
+            
+            try {
+                const url = `${API_BASE}/workers/all?institute=${encodeURIComponent(division)}&department=`;
+                console.log('Отправляю запрос к:', url);
+                
+                const response = await fetch(url, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                console.log('Ответ API всех сотрудников:', data);
+                
+                if (data.status === 'Ok' && data.users) {
+                    if (!tbody) {
+                        console.error('Не найден tbody таблицы сотрудников!');
+                        return;
+                    }
+                    
+                    tbody.innerHTML = '';
+                    console.log(`Найдено сотрудников: ${data.users.length}`);
+                    
+                    if (data.users.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                                    В институте ${division === 'giredmet' ? 'Гиредмет' : 'Графит'} пока нет сотрудников
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    data.users.forEach(user => {
+                        // Формируем фамилию и инициалы
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                        
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <img src="${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(division)}" 
+                                         alt="Фото" class="contact-photo" 
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="contact-photo-placeholder" style="display: none;">
+                                        ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
+                                    </div>
+                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${shortName}</a>
+                                </div>
+                            </td>
+                            <td>${user.phone_number || ''}</td>
+                            <td>${user.cabinet || ''}</td>
+                            <td>${user.email || ''}</td>
+                            <td>${user.position || ''}</td>
+                            <td>${user.department || ''}</td>
+                            <td class="actions-cell">
+                                <div class="actions-wrapper">
+                                    <span class="icon-edit" title="Редактировать" onclick="openEditUserModal('${user.email}', '${division}')"></span>
+                                    <span class="icon-delete" title="Удалить" onclick="openDeleteUserModal('${user.email}', '${division}', '${shortName}')"></span>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    console.log('Сотрудники добавлены в таблицу');
+                    
+                    // Настраиваем пагинацию
+                    paginateTable();
+                } else {
+                    console.error('Ошибка загрузки всех сотрудников:', data.error);
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                    Ошибка загрузки данных: ${data.error || 'Неизвестная ошибка'}
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки сотрудников:', error);
+                if (tbody) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                Ошибка соединения с сервером
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            console.log('=== КОНЕЦ loadAllWorkers ===');
+        }
 
+        // Загрузка отделов для сайдбара с кэшированием
+        async function loadDepartments(institute) {
+            try {
+                // Проверяем кэш
+                if (departmentsCache[institute]) {
+                    console.log(`Используем кэш отделов для ${institute}`);
+                    renderDepartments(departmentsCache[institute], institute);
+                    return;
+                }
 
-        function switchDivision(name) {
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.departments) {
+                    // Сохраняем в кэш
+                    departmentsCache[institute] = data.departments;
+                    renderDepartments(data.departments, institute);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки отделов:', error);
+            }
+        }
+
+        // Отрисовка отделов
+        function renderDepartments(departments, institute) {
             const list = document.getElementById('department-list');
             list.innerHTML = '';
 
-            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
+            departments.forEach(dept => {
                 const li = document.createElement('li');
                 li.classList.add('department-item');
-                li.innerHTML = `<span class="department-name">${dept}</span>`;
+                li.innerHTML = `<span class="department-name">${dept.name}</span>`;
 
-                if (subdepts.length > 0) {
+                // Всегда делаем отдел кликабельным для перехода на страницу
+                li.querySelector('.department-name').onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
+                };
+
+                // Добавляем стрелку сразу, но секции загружаем только по клику
+                const arrow = document.createElement('span');
+                arrow.className = 'department-arrow';
+                arrow.innerHTML = ' ▼';
+                arrow.style.cursor = 'pointer';
+                arrow.style.fontSize = '12px';
+                arrow.style.marginLeft = '5px';
+                arrow.style.color = '#999';
+                li.querySelector('.department-name').appendChild(arrow);
+                
+                // Создаем пустой список секций
                     const subList = document.createElement('ul');
                     subList.classList.add('subdepartment-list');
                     subList.style.display = 'none';
-
-                    subdepts.forEach(sub => {
-                        const subLi = document.createElement('li');
-                        subLi.textContent = sub;
-                        subLi.onclick = () => {
-                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&section=${encodeURIComponent(sub)}`;
-                        };
-                        subList.appendChild(subLi);
-                    });
-
-                    li.appendChild(subList);
-                    li.querySelector('.department-name').onclick = () => {
-                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
-                    };
-                } else {
-                    li.onclick = () => {
-                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
-                    };
-                }
+                li.appendChild(subList);
+                
+                // Обработчик для раскрытия/скрытия подотделов (только на стрелку)
+                arrow.onclick = (e) => {
+                    e.stopPropagation(); // Предотвращаем переход на страницу отдела
+                    
+                    if (subList.style.display === 'none') {
+                        // Загружаем секции только при первом раскрытии
+                        loadDepartmentSections(dept, institute, subList, arrow);
+                        subList.style.display = 'block';
+                        arrow.innerHTML = ' ▲';
+                    } else {
+                        subList.style.display = 'none';
+                        arrow.innerHTML = ' ▼';
+                    }
+                };
 
                 list.appendChild(li);
             });
+        }
 
-            const buttonContainer = document.getElementById('division-button-container');
-            const divisionButton = document.getElementById('current-division-btn');
+        // Загрузка секций отдела по требованию
+        async function loadDepartmentSections(dept, institute, subList, arrow) {
+            const cacheKey = `${institute}-${dept.name}`;
+            
+            try {
+                // Проверяем кэш секций
+                if (sectionsCache[cacheKey]) {
+                    console.log(`Используем кэш секций для ${dept.name}`);
+                    renderSections(sectionsCache[cacheKey], dept, institute, subList);
+                    return;
+                }
 
-            buttonContainer.style.display = 'block';
-            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
-            divisionButton.onclick = () => {
-                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
-            };
+                // Показываем индикатор загрузки
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Загрузка...</li>';
+                
+                const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                const sectionsData = await sectionsResponse.json();
+                
+                if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                    // Сохраняем в кэш
+                    sectionsCache[cacheKey] = sectionsData.sections;
+                    renderSections(sectionsData.sections, dept, institute, subList);
+                } else {
+                    // Нет секций
+                    subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                }
+            } catch (err) {
+                console.log(`Ошибка загрузки секций для отдела ${dept.name}:`, err);
+                subList.innerHTML = '<li style="color: #d32f2f; font-style: italic;">Ошибка загрузки</li>';
+            }
+        }
 
+        // Отрисовка секций
+        function renderSections(sections, dept, institute, subList) {
+            subList.innerHTML = '';
+            
+            if (sections.length === 0) {
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                return;
+            }
+
+            sections.forEach(section => {
+                const subLi = document.createElement('li');
+                subLi.textContent = section.name;
+                subLi.onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
+                };
+                subList.appendChild(subLi);
+            });
+        }
+
+        function switchDivision(name) {
+            // Загружаем отделы для выбранного института
+            loadDepartments(name);
+
+            // Обновляем активную вкладку
             document.getElementById('link-giredmet').classList.remove('active-division');
-            document.getElementById('link-graphite').classList.remove('active-division');
+            document.getElementById('link-grafit').classList.remove('active-division');
             document.getElementById(`link-${name}`).classList.add('active-division');
         }
 
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division');
-            const contacts = exampleContacts[division] || [];
-            const department = params.get('department');
-            const subdepartment = params.get('subdepartment');
-
-            switchDivision('giredmet');
-
+        // Загрузка breadcrumbs
+        function loadBreadcrumbs() {
             const breadcrumbs = document.getElementById('breadcrumbs');
             if (!breadcrumbs) return;
 
             let html = `<a href="index.html">Главная</a>`;
-
-            if (division) {
-                html += ` / ${capitalize(division)}`;
-            }
-            if (department) {
-                html += ` / ${department}`;
-            }
-
-            if (subdepartment) {
-                html += ` / ${subdepartment}`;
-            }
-
+            html += ` / ${capitalize(division)}`;
             breadcrumbs.innerHTML = html;
-            document.querySelectorAll('.fio-link').forEach(link => {
-                const name = link.textContent.trim();
-                let url = `contact.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&name=${encodeURIComponent(name)}`;
-                if (subdepartment) {
-                    url += `&section=${encodeURIComponent(subdepartment)}`;
-                }
-                link.href = url;
-            });
-
-            document.querySelectorAll('.actions-cell').forEach(cell => {
-                const tr = cell.parentElement;
-                const fio = tr.querySelector('.fio-link').textContent.trim();
-
-                const btnEdit = cell.querySelector('.icon-edit');
-                btnEdit.addEventListener('click', () => openEditFromTable(tr));
-
-                const btnDelete = cell.querySelector('.icon-delete');
-                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
-            });
-
-            document.getElementById('divisionTitle').innerText = `Контакты института "${capitalize(division)}"`;
-
-            const tbody = document.getElementById('contactsTableBody');
-            contacts.forEach(contact => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><a href="contact.html" class="fio-link">${contact.name}</a></td>
-                    <td>${contact.phone || '-'}</td>
-                    <td>${contact.cab || '-'}</td>
-                    <td>${contact.email || '-'}</td>
-                    <td>${contact.position || '-'}</td>
-                    <td>${contact.department || '-'}</td>
-                    <td>${contact.sub || '-'}</td>
-                    <td class="actions-cell">
-                    <div class="actions-wrapper">
-                        <span class="icon-edit" title="Редактировать"></span>
-                        <span class="icon-delete" title="Удалить"></span>
-                    </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-
-            document.querySelectorAll('.actions-cell').forEach(cell => {
-                const tr = cell.parentElement;
-
-                const btnEdit = cell.querySelector('.icon-edit');
-                btnEdit.addEventListener('click', () => openEditFromTable(tr));
-
-                const btnDelete = cell.querySelector('.icon-delete');
-                btnDelete.addEventListener('click', () => openDeleteFromTable(tr));
-            });
-
-            paginateTable();
-        };
+        }
 
         function capitalize(str) {
             if (!str) return '';
             const map = {
                 giredmet: "Гиредмет",
-                graphite: "Графит"
+                grafit: "Графит"
             };
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
-
 
         function openAddContactModal() {
             document.getElementById("addContactModal").style.display = "flex";
@@ -266,130 +370,561 @@
 
         function closeImportModal() {
             document.getElementById("importModal").style.display = "none";
+            
+            // Очищаем форму
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.reset();
+                
+                // Сбрасываем текст имени файла
+                const fileNameSpan = document.getElementById('fileName');
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = 'Файл не выбран';
+                }
+                
+                // Восстанавливаем кнопку
+                const submitBtn = document.getElementById('importSubmitBtn');
+                const btnText = submitBtn.querySelector('.btn-text');
+                if (submitBtn && btnText) {
+                    btnText.innerHTML = '🚀 Импортировать';
+                    submitBtn.disabled = false;
+                }
+                
+                // Скрываем прогресс бар
+                const progressDiv = document.getElementById('uploadProgress');
+                const progressFill = document.querySelector('.progress-fill');
+                if (progressDiv) {
+                    progressDiv.style.display = 'none';
+                }
+                if (progressFill) {
+                    progressFill.style.width = '0%';
+                }
+            }
         }
 
         function handleSearchClick() {
             const input = document.querySelector('.search-bar');
             const value = input.value.trim();
             if (value) {
-                alert(`Будет искать: ${value}`); // TODO: замена на реальный поиск
+                // Поиск уже реализован через input event listener
+                console.log(`Поиск: ${value}`);
             }
         }
 
         let contactRowToDelete = null;
 
-        function openEditFromTable(row) {
-            const fullName = row.querySelector('.fio-link').innerText;
-            const position = row.cells[4].innerText;
-            const department = row.cells[5].innerText;
-            const email = row.cells[3].innerText;
-            const workPhone = row.cells[1].innerText;
-            const room = row.cells[2].innerText;
-
-            document.getElementById('editName').value = fullName;
-            document.getElementById('editPosition').value = position;
-            document.getElementById('editDepartment').value = department;
-            document.getElementById('editEmail').value = email;
-            document.getElementById('editWorkPhone').value = workPhone;
-            document.getElementById('editBirthday').value = '';
-            document.getElementById('editPersonalPhone').value = '';
-
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
-        function openDeleteFromTable(row) {
-            contactRowToDelete = row;
-            const name = row.querySelector('.fio-link').innerText;
-            const el = document.getElementById('deleteConfirmText');
-            el.innerText = `Удалить контакт "${name}"?`;
-            el.classList.add('modal-subtitle');
-            document.getElementById('deleteContactModal').style.display = 'flex';
-        }
-
-        function closeDeleteContactModal() {
-            document.getElementById('deleteContactModal').style.display = 'none';
-        }
-
-        function confirmDeleteContact() {
-            if (contactRowToDelete) {
-                contactRowToDelete.remove();
-                contactRowToDelete = null;
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Division page loaded with division:', division);
+            
+            const headerText = document.querySelector('#divisionTitle');
+            if (headerText) {
+                const newTitle = `Все контакты ${division === 'giredmet' ? 'Гиредмет' : 'Графит'}`;
+                console.log('Setting header title to:', newTitle);
+                headerText.textContent = newTitle;
+            } else {
+                console.error('Header element #divisionTitle not found');
             }
-            closeDeleteContactModal();
-        }
+            
+            loadBreadcrumbs();
+            switchDivision(division);
+            loadAllWorkers();
+            paginateTable();
+            
+            // Обновляем header при загрузке страницы
+            updateHeaderButtons();
+            
+            // Обновляем видимость кнопок действий
+            updateActionButtons();
 
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
+            // Обработка формы добавления контакта
+            const contactForm = document.getElementById('contactForm');
+            if (contactForm) {
+                contactForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Получаем значения из полей формы по ID
+                    const surname = document.getElementById('surname').value.trim();
+                    const name = document.getElementById('name').value.trim();
+                    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+                    const email = document.getElementById('email').value.trim();
+                    
+                    // Проверяем обязательные поля
+                    if (!surname) {
+                        alert('Пожалуйста, введите фамилию');
+                        return;
+                    }
+                    if (!name) {
+                        alert('Пожалуйста, введите имя');
+                        return;
+                    }
+                    if (!phoneNumber) {
+                        alert('Пожалуйста, введите рабочий телефон');
+                        return;
+                    }
+                    if (!email) {
+                        alert('Пожалуйста, введите email');
+                        return;
+                    }
+                    
+                    // Создаем FormData для отправки файла
+                    const formData = new FormData();
+                    formData.append('institute', division);
+                    formData.append('surname', surname);
+                    formData.append('name', name);
+                    formData.append('middle_name', document.getElementById('middleName').value.trim() || '');
+                    formData.append('email', email);
+                    formData.append('phone_number', phoneNumber);
+                    formData.append('cabinet', document.getElementById('cabinet').value.trim() || '');
+                    formData.append('position', document.getElementById('position').value.trim() || '');
+                    formData.append('department', document.getElementById('department').value.trim() || department || '');
+                    formData.append('section', document.getElementById('section').value.trim() || section || '');
+                    formData.append('description', document.getElementById('description').value.trim() || '');
+                    
+                    // Форматируем дату рождения
+                    let birthDate = document.getElementById('birthDate').value;
+                    if (birthDate) {
+                        formData.append('birth_date', birthDate);
+                    }
+                    
+                    // Добавляем фотографию если выбрана
+                    const photoInput = document.getElementById('contactPhoto');
+                    if (photoInput.files.length > 0) {
+                        const file = photoInput.files[0];
+                        // Проверяем размер файла (5 МБ)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('Размер фотографии не должен превышать 5 МБ');
+                            return;
+                        }
+                        formData.append('photo', file);
+                    }
+                    
+                    console.log('Отправляем данные с фотографией');
 
-        function openAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "flex";
-        }
-
-        function closeAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "none";
-        }
-
-
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            try {
-                const response = await fetch('/api/import-users', {
-                    method: 'POST',
-                    body: formData
+                    // Проверяем наличие токена авторизации
+                    const authToken = localStorage.getItem('authToken');
+                    if (!authToken) {
+                        alert('Для добавления контакта необходимо авторизоваться');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/workers/with-photo`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                                // НЕ устанавливаем Content-Type для FormData - браузер сделает это автоматически
+                            },
+                            body: formData
+                        });
+                        
+                        const result = await response.json();
+                        console.log('Ответ сервера:', result);
+                        
+                        if (result.status === 'Ok') {
+                            alert('Контакт успешно добавлен');
+                            closeAddContactModal();
+                            loadAllWorkers();
+                            e.target.reset();
+                            removePhotoPreview(); // Очищаем превью фотографии
+                        } else {
+                            alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при добавлении контакта:', error);
+                        alert('Ошибка при добавлении контакта: ' + error.message);
+                    }
                 });
-                const result = await response.json();
-                alert(result.status || 'Импорт завершён');
-            } catch (err) {
-                alert('Ошибка при импорте файла');
-                console.error(err);
             }
-        });
 
-        document.getElementById('fileInput').addEventListener('change', function () {
+            // Обработка импорта файла
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    // Проверяем наличие токена авторизации
+                    const authToken = localStorage.getItem('authToken');
+                    if (!authToken) {
+                        alert('Для импорта необходимо авторизоваться');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    // Проверяем выбран ли файл
+                    const fileInput = document.getElementById('fileInput');
+                    if (!fileInput.files.length) {
+                        alert('Пожалуйста, выберите файл для импорта');
+                        return;
+                    }
+
+                    const file = fileInput.files[0];
+                    
+                    // Расширенная проверка файла
+                    const allowedTypes = [
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+                        'application/vnd.ms-excel' // .xls
+                    ];
+                    
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('❌ Неподдерживаемый формат файла!\n\nПожалуйста, выберите файл Excel (.xlsx или .xls)');
+                        return;
+                    }
+                    
+                    // Проверяем размер файла (10 МБ)
+                    const maxSize = 10 * 1024 * 1024; // 10 MB
+                    if (file.size > maxSize) {
+                        alert(`❌ Файл слишком большой!\n\nМаксимальный размер: 10 МБ\nВаш файл: ${(file.size / 1024 / 1024).toFixed(2)} МБ`);
+                        return;
+                    }
+
+                    const formData = new FormData(e.target);
+                    formData.append('institute', division);
+
+                    // UI элементы
+                    const submitBtn = document.getElementById('importSubmitBtn');
+                    const btnText = submitBtn.querySelector('.btn-text');
+                    const progressDiv = document.getElementById('uploadProgress');
+                    const progressFill = document.querySelector('.progress-fill');
+                    const progressText = document.querySelector('.progress-text');
+                    
+                    // Показываем прогресс
+                    const originalBtnText = btnText.innerHTML;
+                    btnText.innerHTML = '⏳ Обработка...';
+                    submitBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    
+                    // Анимация прогресса
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 90) progress = 90;
+                        progressFill.style.width = progress + '%';
+                    }, 200);
+                    
+                    try {
+                        progressText.textContent = 'Загрузка файла на сервер...';
+                        
+                        const response = await fetch(`${API_BASE}/workers/import?institute=${encodeURIComponent(division)}`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${authToken}`
+                            },
+                            body: formData
+                        });
+
+                        progressText.textContent = 'Обработка данных...';
+                        const result = await response.json();
+                        
+                        // Завершаем прогресс
+                        clearInterval(progressInterval);
+                        progressFill.style.width = '100%';
+                        
+                        if (result.status === 'Ok') {
+                            progressText.textContent = '✅ Импорт завершён успешно!';
+                            
+                            // Показываем успешное сообщение
+                            setTimeout(() => {
+                                const importedCount = result.imported_count || 'Несколько';
+                                alert(`🎉 Импорт завершён успешно!\n\n📊 Обработано записей: ${importedCount}\n\n✅ Данные обновлены в системе.`);
+                                closeImportModal();
+                                loadAllWorkers(); // Перезагружаем список работников
+                            }, 1000);
+                        } else {
+                            progressText.textContent = '❌ Ошибка при импорте';
+                            alert(`❌ Ошибка импорта:\n\n${result.error || 'Неизвестная ошибка'}\n\nПроверьте формат файла и попробуйте снова.`);
+                        }
+                    } catch (err) {
+                        clearInterval(progressInterval);
+                        progressText.textContent = '❌ Ошибка соединения';
+                        console.error('Import error:', err);
+                        alert(`❌ Ошибка при импорте файла:\n\n${err.message}\n\nПроверьте соединение с сервером и попробуйте снова.`);
+                    } finally {
+                        // Восстанавливаем UI через небольшую задержку
+                        setTimeout(() => {
+                            btnText.innerHTML = originalBtnText;
+                            submitBtn.disabled = false;
+                            progressDiv.style.display = 'none';
+                            progressFill.style.width = '0%';
+                        }, 2000);
+                    }
+                });
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', function () {
             const fileNameSpan = document.getElementById('fileName');
+                    if (fileNameSpan) {
             fileNameSpan.textContent = this.files.length > 0 ? this.files[0].name : 'Файл не выбран';
-        });
-
-        window.onclick = function (event) {
-            if (event.target === document.getElementById("addContactModal")) {
-                closeAddContactModal();
-            }
-
-            if (event.target === document.getElementById("addDepartmentModal")) {
-                closeAddDepartmentModal();
-            }
-
-            if (event.target === document.getElementById("importModal")) {
-                closeImportModal();
-            }
-        };
-
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value;
-            if (query.length < 2) return;
-
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division') || 'giredmet';
-            const department = params.get('department') || '';
-
-            fetch(`/search?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&query=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const resultsDiv = document.getElementById('results');
-                    resultsDiv.innerHTML = '';
-                    data.users.forEach(user => {
-                        const div = document.createElement('div');
-                        div.classList.add('search-result-row');
-                        div.innerHTML = `<strong>${user.name}</strong> (${user.email}) – каб. ${user.cabinet}`;
-                        resultsDiv.appendChild(div);
-                    });
-                })
-                .catch(err => {
-                    console.error('Ошибка поиска:', err);
+                    }
                 });
+            }
+
+            // Поиск с дебаунсингом
+            const searchInput = document.getElementById('search');
+            let searchTimeout;
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    const query = this.value;
+                    
+                    // Очищаем предыдущий таймер
+                    clearTimeout(searchTimeout);
+                    
+                    if (query.length < 2) {
+                        loadAllWorkers();
+                        return;
+                    }
+
+                    // Показываем индикатор поиска
+                    const tbody = document.querySelector('#contactsTableBody');
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
+                                Поиск "${query}"...
+                            </td>
+                        </tr>
+                    `;
+
+                    // Устанавливаем новый таймер на 300мс
+                    searchTimeout = setTimeout(() => {
+                        fetch(`${API_BASE}/search?institute=${encodeURIComponent(division)}&department=&query=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Результаты поиска:', data);
+                                
+                                tbody.innerHTML = '';
+                                
+                                if (data.status === 'Ok' && data.users && data.users.length > 0) {
+                                    data.users.forEach(user => {
+                                        // Формируем фамилию и инициалы
+                                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                                        
+                                        const row = document.createElement('tr');
+                                        row.innerHTML = `
+                                            <td>
+                                                <div style="display: flex; align-items: center;">
+                                                    <img src="${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(division)}" 
+                                                         alt="Фото" class="contact-photo" 
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                    <div class="contact-photo-placeholder" style="display: none;">
+                                                        ${user.surname ? user.surname.charAt(0).toUpperCase() : '?'}
+                                                    </div>
+                                                    <a href="contact.html?email=${encodeURIComponent(user.email)}" class="fio-link" style="margin-left: 10px;">${shortName}</a>
+                                                </div>
+                                            </td>
+                                            <td>${user.phone_number || ''}</td>
+                                            <td>${user.cabinet || ''}</td>
+                                            <td>${user.email || ''}</td>
+                                            <td>${user.position || ''}</td>
+                                            <td>${user.department || ''}</td>
+                                            <td class="actions-cell">
+                                                <div class="actions-wrapper">
+                                                    <span class="icon-edit" title="Редактировать"></span>
+                                                    <span class="icon-delete" title="Удалить"></span>
+                                                </div>
+                                            </td>
+                                        `;
+                                        tbody.appendChild(row);
+                                    });
+                                    
+                                    // Настраиваем пагинацию
+                                    paginateTable();
+                                } else {
+                                    // Показываем сообщение о том, что работников не найдено
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td colspan="8" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                                            Работников не найдено по запросу "${query}"
+                                        </td>
+                                    `;
+                                    tbody.appendChild(row);
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Ошибка поиска:', err);
+                                // Показываем сообщение об ошибке
+                                tbody.innerHTML = '';
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: #d32f2f; font-style: italic;">
+                                        Ошибка поиска. Попробуйте еще раз.
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                    }, 300); // Задержка 300мс
+                });
+            }
+
+            // Обновление видимости кнопок действий
+            updateActionButtons();
+
+            // Закрытие модальных окон при клике вне их
+            window.onclick = function (event) {
+                if (event.target === document.getElementById("addContactModal")) {
+                    closeAddContactModal();
+                }
+                if (event.target === document.getElementById("importModal")) {
+                    closeImportModal();
+                }
+                if (event.target === document.getElementById("editUserModal")) {
+                    closeEditUserModal();
+                }
+                if (event.target === document.getElementById("deleteConfirmModal")) {
+                    closeDeleteModal();
+                }
+            };
         });
+
+        // Функции для работы с фотографиями
+        function setupPhotoPreview() {
+            const photoInput = document.getElementById('contactPhoto');
+            if (photoInput) {
+                photoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Проверяем размер файла
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('Размер фотографии не должен превышать 5 МБ');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Проверяем тип файла
+                        if (!file.type.startsWith('image/')) {
+                            alert('Пожалуйста, выберите файл изображения');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Показываем превью
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewDiv = document.getElementById('photoPreview');
+                            const previewImg = document.getElementById('previewImage');
+                            
+                            previewImg.src = e.target.result;
+                            previewDiv.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+        }
+        
+        function removePhotoPreview() {
+            const photoInput = document.getElementById('contactPhoto');
+            const previewDiv = document.getElementById('photoPreview');
+            
+            if (photoInput) photoInput.value = '';
+            if (previewDiv) previewDiv.style.display = 'none';
+        }
+
+        // Инициализируем превью фотографии
+        setupPhotoPreview();
+
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.email) {
+                    return {
+                        email: data.email,
+                        role: data.role
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                return null;
+            }
+        }
+
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = 'Гость';
+                        }
+                        
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            ${adminPanelButton}
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error updating header with user info:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
+
     </script>
 
     <div id="addContactModal" class="modal">
@@ -398,11 +933,28 @@
             <h2>Добавление контакта</h2>
             <p class="modal-subtitle">Заполните поля</p>
             <form id="contactForm">
-                <input type="text" placeholder="ФИО контакта" required>
-                <input type="text" placeholder="Отдел" required>
-                <input type="email" placeholder="Почта" required>
-                <input type="tel" placeholder="Рабочий телефон" required>
-                <input type="text" placeholder="Описание (опционально)">
+                <input type="text" placeholder="Фамилия" id="surname" required>
+                <input type="text" placeholder="Имя" id="name" required>
+                <input type="text" placeholder="Отчество (необязательно)" id="middleName">
+                <input type="email" placeholder="Email" id="email" required>
+                <input type="tel" placeholder="Рабочий телефон" id="phoneNumber" required>
+                <input type="text" placeholder="Кабинет (необязательно)" id="cabinet">
+                <input type="text" placeholder="Должность (необязательно)" id="position">
+                <input type="text" placeholder="Отдел (необязательно)" id="department">
+                <input type="text" placeholder="Подотдел (необязательно)" id="section">
+                <input type="date" placeholder="Дата рождения (необязательно)" id="birthDate">
+                <input type="text" placeholder="Описание (необязательно)" id="description">
+                <div class="file-upload-wrapper">
+                    <label for="contactPhoto" class="file-upload-label">
+                        <span class="file-upload-text">Загрузить фотографию (необязательно)</span>
+                        <span class="file-upload-hint">Максимум 5 МБ, форматы: JPG, PNG, GIF, WebP</span>
+                    </label>
+                    <input type="file" id="contactPhoto" accept="image/*" class="file-upload-input">
+                    <div class="photo-preview" id="photoPreview" style="display: none;">
+                        <img id="previewImage" alt="Предпросмотр фотографии">
+                        <button type="button" class="remove-photo-btn" onclick="removePhotoPreview()">&times;</button>
+                    </div>
+                </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeAddContactModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Добавить</button>
@@ -414,17 +966,70 @@
     <div id="importModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeImportModal()">&times;</span>
-            <h2>Импорт контактов</h2>
-            <p class="modal-subtitle">Загрузите файл с контактами</p>
+            <h2>📥 Импорт контактов</h2>
+            <p class="modal-subtitle">Загрузите файл Excel с данными сотрудников для массового импорта</p>
+            
+            <div class="import-info">
+                <div class="info-section">
+                    <h4>📋 Требования к файлу:</h4>
+                    <ul>
+                        <li><strong>Формат:</strong> Excel (.xlsx или .xls)</li>
+                        <li><strong>Максимальный размер:</strong> 10 МБ</li>
+                        <li><strong>Структура:</strong> Первая строка должна содержать заголовки столбцов</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>✅ Обязательные поля:</h4>
+                    <ul>
+                        <li>Фамилия (surname)</li>
+                        <li>Имя (name)</li>
+                        <li>Email (email)</li>
+                        <li>Рабочий телефон (phone_number)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>📝 Дополнительные поля:</h4>
+                    <ul>
+                        <li>Отчество (middle_name)</li>
+                        <li>Должность (position)</li>
+                        <li>Отдел (department)</li>
+                        <li>Подотдел (section)</li>
+                        <li>Кабинет (cabinet)</li>
+                        <li>Дата рождения (birth_date)</li>
+                        <li>Описание (description)</li>
+                    </ul>
+                </div>
+                
+                <div class="import-warning">
+                    ⚠️ <strong>Внимание:</strong> Если сотрудник с таким же email уже существует, его данные будут обновлены.
+                </div>
+            </div>
+            
             <form id="uploadForm" enctype="multipart/form-data" method="post">
                 <div class="file-upload-wrapper">
-                    <label for="fileInput" class="file-upload-label">Выбрать файл</label>
+                    <label for="fileInput" class="file-upload-label">
+                        📁 Выбрать файл Excel
+                    </label>
                     <span id="fileName" class="file-name">Файл не выбран</span>
-                    <input type="file" name="file" id="fileInput" required>
+                    <input type="file" name="file" id="fileInput" 
+                           accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" 
+                           required>
                 </div>
+                
+                <div id="uploadProgress" class="upload-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <span class="progress-text">Загрузка и обработка файла...</span>
+                </div>
+                
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeImportModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Импортировать</button>
+                    <button type="submit" class="submit-btn" id="importSubmitBtn">
+                        <span class="btn-text">🚀 Импортировать</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -437,53 +1042,31 @@
 
             <div class="modal-buttons">
                 <button class="cancel-btn" onclick="closeDeleteModal()">Отмена</button>
-                <button class="submit-btn" onclick="confirmDelete()">Удалить</button>
+                <button class="submit-btn" onclick="confirmDeleteUser()">Удалить</button>
             </div>
         </div>
     </div>
 
-    <div id="deleteContactModal" class="modal">
+    <!-- Модальное окно редактирования пользователя -->
+    <div id="editUserModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeDeleteContactModal()">&times;</span>
-            <h2>Удаление контакта</h2>
-            <p id="deleteConfirmText">Вы уверены, что хотите удалить этот контакт?</p>
-            <div class="modal-buttons">
-                <button class="cancel-btn" onclick="closeDeleteContactModal()">Отмена</button>
-                <button class="submit-btn" onclick="confirmDeleteContact()">Удалить</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeEditModal()">&times;</span>
-            <h2>Редактировать контакт</h2>
-            <form id="editForm">
-                <input type="text" id="editName" placeholder="ФИО" required>
-                <input type="text" id="editPosition" placeholder="Должность" required>
-                <input type="text" id="editDepartment" placeholder="Отдел" required>
-                <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
-                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
-                <input type="email" id="editEmail" placeholder="Email" required>
-                <input type="text" id="editBirthday" placeholder="Дата рождения">
+            <span class="close-btn" onclick="closeEditUserModal()">&times;</span>
+            <h2>Редактировать сотрудника</h2>
+            <form id="editUserForm">
+                <input type="text" id="editUserSurname" placeholder="Фамилия" required>
+                <input type="text" id="editUserName" placeholder="Имя" required>
+                <input type="text" id="editUserMiddleName" placeholder="Отчество">
+                <input type="email" id="editUserEmail" placeholder="Email" required>
+                <input type="tel" id="editUserPhone" placeholder="Телефон" required>
+                <input type="text" id="editUserCabinet" placeholder="Кабинет">
+                <input type="text" id="editUserPosition" placeholder="Должность">
+                <input type="text" id="editUserDepartment" placeholder="Отдел">
+                <input type="text" id="editUserSection" placeholder="Подотдел">
+                <input type="date" id="editUserBirthday" placeholder="Дата рождения">
+                <textarea id="editUserDescription" placeholder="Описание" rows="3"></textarea>
                 <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
+                    <button type="button" class="cancel-btn" onclick="closeEditUserModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Сохранить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="addDepartmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
-            <h2>Добавление отдела</h2>
-            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
-            <form id="departmentForm">
-                <input type="text" placeholder="Название отдела" required>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
                 </div>
             </form>
         </div>
@@ -560,6 +1143,215 @@
         window.addEventListener("DOMContentLoaded", () => {
             paginateTable();
         });
+
+        // Переменные для редактирования пользователя
+        let currentEditingUser = null;
+        let currentEditingInstitute = null;
+
+        // Переменные для удаления пользователя
+        let currentDeletingEmail = null;
+        let currentDeletingInstitute = null;
+        let currentDeletingName = null;
+
+        // Открытие модального окна удаления пользователя
+        function openDeleteUserModal(email, institute, shortName) {
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+            currentDeletingEmail = email;
+            currentDeletingInstitute = institute;
+            currentDeletingName = shortName;
+
+            const modalSubtitle = document.getElementById('deleteConfirmModal').querySelector('.modal-subtitle');
+            if (modalSubtitle) {
+                modalSubtitle.textContent = `Вы уверены, что хотите удалить контакт "${shortName}"?`;
+            }
+        }
+
+        // Подтверждение удаления пользователя
+        async function confirmDeleteUser() {
+            if (!currentDeletingEmail || !currentDeletingInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers?email=${encodeURIComponent(currentDeletingEmail)}&institute=${currentDeletingInstitute}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Сотрудник успешно удален');
+                    closeDeleteModal();
+                    // Перезагружаем список сотрудников
+                    loadAllWorkers();
+                } else {
+                    alert('Ошибка при удалении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении сотрудника:', error);
+                alert('Ошибка при удалении сотрудника');
+            }
+            
+            // Очищаем переменные
+            currentDeletingEmail = null;
+            currentDeletingInstitute = null;
+            currentDeletingName = null;
+        }
+
+        // Закрытие модального окна удаления
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            currentDeletingEmail = null;
+            currentDeletingInstitute = null;
+            currentDeletingName = null;
+        }
+
+        // Открытие модального окна редактирования пользователя
+        async function openEditUserModal(email, institute) {
+            try {
+                // Загружаем данные пользователя
+                const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(email)}?institute=${institute}`);
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.user) {
+                    const user = data.user;
+                    currentEditingUser = user;
+                    currentEditingInstitute = institute;
+                    
+                    // Заполняем форму данными пользователя
+                    document.getElementById('editUserSurname').value = user.surname || '';
+                    document.getElementById('editUserName').value = user.name || '';
+                    document.getElementById('editUserMiddleName').value = user.middle_name || '';
+                    document.getElementById('editUserEmail').value = user.email || '';
+                    document.getElementById('editUserPhone').value = user.phone_number || '';
+                    document.getElementById('editUserCabinet').value = user.cabinet || '';
+                    document.getElementById('editUserPosition').value = user.position || '';
+                    document.getElementById('editUserDepartment').value = user.department || '';
+                    document.getElementById('editUserSection').value = user.section || '';
+                    document.getElementById('editUserDescription').value = user.description || '';
+                    
+                    // Форматируем дату рождения для input[type="date"]
+                    if (user.birth_date && user.birth_date !== '0001-01-01T00:00:00Z') {
+                        const birthDate = new Date(user.birth_date);
+                        const formattedDate = birthDate.toISOString().split('T')[0];
+                        document.getElementById('editUserBirthday').value = formattedDate;
+                    } else {
+                        document.getElementById('editUserBirthday').value = '';
+                    }
+                    
+                    document.getElementById('editUserModal').style.display = 'flex';
+                } else {
+                    alert('Ошибка загрузки данных пользователя');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки пользователя:', error);
+                alert('Ошибка загрузки данных пользователя');
+            }
+        }
+
+        // Закрытие модального окна редактирования пользователя
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+            currentEditingUser = null;
+            currentEditingInstitute = null;
+        }
+
+        // Обработчик формы редактирования пользователя
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentEditingUser || !currentEditingInstitute) {
+                alert('Ошибка: данные пользователя не загружены');
+                return;
+            }
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const formData = {
+                    institute: currentEditingInstitute,
+                    old_email: currentEditingUser.email,
+                    surname: document.getElementById('editUserSurname').value.trim(),
+                    name: document.getElementById('editUserName').value.trim(),
+                    middle_name: document.getElementById('editUserMiddleName').value.trim(),
+                    email: document.getElementById('editUserEmail').value.trim(),
+                    phone_number: document.getElementById('editUserPhone').value.trim(),
+                    cabinet: document.getElementById('editUserCabinet').value.trim(),
+                    position: document.getElementById('editUserPosition').value.trim(),
+                    department: document.getElementById('editUserDepartment').value.trim(),
+                    section: document.getElementById('editUserSection').value.trim(),
+                    description: document.getElementById('editUserDescription').value.trim()
+                };
+                
+                // Добавляем дату рождения если указана
+                const birthDate = document.getElementById('editUserBirthday').value;
+                if (birthDate) {
+                    formData.birth_date = new Date(birthDate).toISOString();
+                }
+                
+                console.log('Отправляем данные для обновления:', formData);
+                
+                const response = await fetch(`${API_BASE}/workers`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                console.log('Ответ сервера:', result);
+                
+                if (result.status === 'Ok') {
+                    alert('Сотрудник успешно обновлен');
+                    closeEditUserModal();
+                    // Перезагружаем список сотрудников
+                    loadAllWorkers();
+                } else {
+                    alert('Ошибка при обновлении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении сотрудника:', error);
+                alert('Ошибка при обновлении сотрудника: ' + error.message);
+            }
+        });
+
+        // Обновление видимости кнопок действий
+        function updateActionButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const addContactBtn = document.querySelector('.add-btn[onclick="openAddContactModal()"]');
+            const importBtn = document.querySelector('.add-btn[onclick="openImportModal()"]');
+            
+            if (addContactBtn && importBtn) {
+                if (authToken) {
+                    // Показываем кнопки для авторизованных пользователей
+                    addContactBtn.style.display = 'inline-block';
+                    importBtn.style.display = 'inline-block';
+                } else {
+                    // Скрываем кнопки для неавторизованных пользователей
+                    addContactBtn.style.display = 'none';
+                    importBtn.style.display = 'none';
+                }
+            }
+        }
+
+        // Сброс формы добавления контакта
     </script>
 
 </body>

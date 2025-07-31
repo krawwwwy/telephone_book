@@ -7,16 +7,18 @@ package main
 // @BasePath /
 
 import (
-	_ "telephone-book/docs" // swagger docs
 	"context"
 	stdlog "log"
 	"log/slog"
 	"net/http"
 	"os"
+	_ "telephone-book/docs" // swagger docs
 	sso "telephone-book/internal/clients/sso/grpc"
 	"telephone-book/internal/config"
+	"telephone-book/internal/http_server/handlers/auth/check_role"
 	"telephone-book/internal/http_server/handlers/auth/login"
 	"telephone-book/internal/http_server/handlers/auth/register"
+	"telephone-book/internal/http_server/handlers/auth/user_info"
 	"telephone-book/internal/http_server/handlers/departments"
 	"telephone-book/internal/http_server/handlers/utility/birthday"
 	"telephone-book/internal/http_server/handlers/utility/emergency"
@@ -85,6 +87,8 @@ func main() {
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", login.New(ctx, ssoClient, log))
 		r.Post("/register", register.New(ctx, ssoClient, log))
+		r.Get("/check-role", check_role.CheckRole(ctx, log))
+		r.Get("/user-info", user_info.UserInfo(ctx, log))
 	})
 
 	// Срочные службы
@@ -107,7 +111,12 @@ func main() {
 	//Работники
 	router.Route("/workers", func(r chi.Router) {
 		r.Post("/", workers.Create(ctx, log, storage))
-		r.Get("/", workers.GetByEmail(ctx, log, storage))
+		r.Post("/with-photo", workers.CreateWithPhoto(ctx, log, storage))
+		r.Get("/{email}", workers.GetByEmail(ctx, log, storage))
+		r.Get("/{email}/photo", workers.GetPhoto(ctx, log, storage))
+		r.Post("/{email}/photo", workers.UploadPhoto(ctx, log, storage))
+		r.Put("/{email}/photo", workers.UpdatePhoto(ctx, log, storage))
+		r.Delete("/{email}/photo", workers.DeletePhoto(ctx, log, storage))
 		r.Put("/", workers.Update(ctx, log, storage))
 		r.Delete("/", workers.Delete(ctx, log, storage))
 		r.Post("/all", workers.GetAll(ctx, log, storage))

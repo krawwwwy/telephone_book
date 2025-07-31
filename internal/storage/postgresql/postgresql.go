@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"telephone-book/internal/domain/models"
 	"telephone-book/internal/storage"
 	"time"
@@ -54,33 +55,51 @@ func (s *Storage) Search(ctx context.Context, institute string, department strin
 		return nil, err
 	}
 
+	// Разбиваем поисковую строку на слова
+	words := strings.Fields(strings.TrimSpace(info))
+	if len(words) == 0 {
+		return []models.User{}, nil
+	}
+
 	var query string
 	var args []interface{}
 
-	args = append(args, "%"+info+"%")
+	// Строим условия поиска для каждого слова
+	var searchConditions []string
+	argIndex := 1
+
+	for _, word := range words {
+		// Каждое слово ищем по всем полям - только с начала слова
+		wordCondition := fmt.Sprintf("(surname ILIKE $%d OR name ILIKE $%d OR middle_name ILIKE $%d OR email ILIKE $%d OR cabinet ILIKE $%d)",
+			argIndex, argIndex, argIndex, argIndex, argIndex)
+		searchConditions = append(searchConditions, wordCondition)
+		args = append(args, word+"%") // Убираю % в начале - теперь ищем только с начала
+		argIndex++
+	}
+
+	// Объединяем все условия через AND (все слова должны найтись)
+	allSearchConditions := "(" + strings.Join(searchConditions, " AND ") + ")"
 
 	if department == "" {
 		// Если отдел не указан, возвращаем всех пользователей
-		query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+		query = fmt.Sprintf(`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
 			FROM workers
-			WHERE surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1
-			ORDER BY surname, name`
+			WHERE %s
+			ORDER BY surname, name`, allSearchConditions)
 	} else {
 		if section == "" {
 			// Если отдел указан, фильтруем по нему
-			query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			query = fmt.Sprintf(`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
 				FROM workers
-				WHERE department = $2 AND
-				(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
-				ORDER BY surname, name`
+				WHERE department = $%d AND %s
+				ORDER BY surname, name`, argIndex, allSearchConditions)
 			args = append(args, department)
 		} else {
 			// Если отдел и секция указаны, фильтруем по ним
-			query = `SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
+			query = fmt.Sprintf(`SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department
 				FROM workers
-				WHERE department = $2 AND section = $3 AND
-				(surname ILIKE $1 OR name ILIKE $1 OR middle_name ILIKE $1 OR email ILIKE $1 OR cabinet ILIKE $1)
-				ORDER BY surname, name`
+				WHERE department = $%d AND section = $%d AND %s
+				ORDER BY surname, name`, argIndex, argIndex+1, allSearchConditions)
 			args = append(args, department, section)
 		}
 	}
@@ -94,21 +113,29 @@ func (s *Storage) Search(ctx context.Context, institute string, department strin
 	var users []models.User
 	for rows.Next() {
 		var user models.User
+		var middleName, cabinet, position, department sql.NullString
 
 		err := rows.Scan(
 			&user.ID,
 			&user.Surname,
 			&user.Name,
-			&user.MiddleName,
+			&middleName,
 			&user.Email,
 			&user.PhoneNumber,
-			&user.Cabinet,
-			&user.Position,
-			&user.Department,
+			&cabinet,
+			&position,
+			&department,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: failed to scan row: %w", op, err)
 		}
+
+		// Конвертируем NullString в обычные строки
+		user.MiddleName = middleName.String
+		user.Cabinet = cabinet.String
+		user.Position = position.String
+		user.Department = department.String
+
 		users = append(users, user)
 	}
 
@@ -148,10 +175,10 @@ func (s *Storage) CreateUserTx(
 		INSERT INTO workers (
 		surname, name, middle_name,
 		email, phone_number, cabinet,
-		position, department,
+		position, department, section,
 		birth_date, description, photo
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id
 		`
 
@@ -239,7 +266,6 @@ func (s *Storage) Emergency(ctx context.Context) ([]models.Service, error) {
 		var service models.Service
 
 		err := rows.Scan(
-			&service.ID,
 			&service.Name,
 			&service.PhoneNumber,
 			&service.Email,
@@ -277,7 +303,8 @@ func (s *Storage) getBirthdaysByOffset(ctx context.Context, institute string, da
 	query := fmt.Sprintf(`
         SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date
         FROM workers
-        WHERE EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
+        WHERE birth_date IS NOT NULL 
+          AND EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
           AND EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '%d day')
         ORDER BY surname, name
     `, dayOffset, dayOffset)

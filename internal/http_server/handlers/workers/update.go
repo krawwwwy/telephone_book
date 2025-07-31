@@ -22,6 +22,7 @@ const maxPhotoSize = 5 * 1024 * 1024 // 5 MB
 
 type UpdateRequest struct {
 	Institute   string    `json:"institute" validate:"required"`
+	OldEmail    string    `json:"old_email" validate:"required,email"`
 	Surname     string    `json:"surname" validate:"required"`
 	Name        string    `json:"name" validate:"required"`
 	MiddleName  string    `json:"middle_name,omitempty"`
@@ -90,22 +91,6 @@ func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http
 			render.JSON(w, r, resp.Error("unauthorized: only authenticated users can update workers"))
 			return
 		}
-		institute := r.URL.Query().Get("institute")
-		if institute == "" {
-			msg := "institute not specified"
-			log.Error(msg)
-			render.JSON(w, r, resp.Error(msg))
-
-			return
-		}
-		oldEmail := r.URL.Query().Get("email")
-		if oldEmail == "" {
-			msg := "email not specified"
-			log.Error(msg)
-			render.JSON(w, r, resp.Error(msg))
-
-			return
-		}
 
 		var req UpdateRequest
 
@@ -118,6 +103,24 @@ func Update(ctx context.Context, log *slog.Logger, userUpdater UserUpdater) http
 		}
 
 		log.Info("request body decoded", slog.Any("request", req))
+
+		// Получаем institute и oldEmail из тела запроса
+		institute := req.Institute
+		if institute == "" {
+			msg := "institute not specified"
+			log.Error(msg)
+			render.JSON(w, r, resp.Error(msg))
+			return
+		}
+
+		// Получаем старый email из поля old_email в запросе
+		oldEmail := req.OldEmail
+		if oldEmail == "" {
+			msg := "old_email not specified"
+			log.Error(msg)
+			render.JSON(w, r, resp.Error(msg))
+			return
+		}
 
 		if err := validator.New().Struct(req); err != nil {
 			validateErr := err.(validator.ValidationErrors)

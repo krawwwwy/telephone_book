@@ -29,16 +29,12 @@
     <main class="main-content">
         <aside class="sidebar">
             <div class="division-links">
-                <a href="#" id="link-giredmet" onclick="switchDivision('giredmet')">Гиредмет</a> /
-                <a href="#" id="link-graphite" onclick="switchDivision('graphite')">Графит</a>
-            </div>
-            <div id="division-button-container" style="margin-bottom: 20px; display: none;">
-                <button class="btn-secondary" id="current-division-btn">Все контакты</button>
+                <a href="division.html?division=giredmet" id="link-giredmet">Гиредмет</a> /
+                <a href="division.html?division=grafit" id="link-grafit">Графит</a>
             </div>
 
             <ul class="department-list" id="department-list">
             </ul>
-            <button class="add-btn" onclick="openAddDepartmentModal()">Добавить отдел</button>
         </aside>
         <section class="center-panel">
             <h2 class="header-text">Телефоны экстренных служб</h1>
@@ -51,196 +47,664 @@
                                 <th>Email</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>Диспетчерская</td>
-                                <td>+7 (495) 123-45-67</td>
-                                <td>0707@rosatom.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Техническая поддержка</td>
-                                <td>+7 (800) 755 75 23</td>
-                                <td>support.fgisopvk@rosatom.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Пожарная охрана<br>и спасатели</td>
-                                <td>101, 112</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Полиция</td>
-                                <td>102</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Скорая помощь</td>
-                                <td>103</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
-                            <tr>
-                                <td>Газовая аварийная<br>служба</td>
-                                <td>104</td>
-                                <td>gu_moscow@77.mchs.gov.ru</td>
-                            </tr>
+                        <tbody id="emergency-services">
+                            <!-- Экстренные службы будут загружены с сервера -->
                         </tbody>
                     </table>
                 </div>
-
-                <section class="additional-info">
-                    <h2 class="header-text2">Государственная корпорация по атомной энергии «Росатом»</h1>
-                        <p><strong>Многоканальный телефон:</strong> (499) 949-4535 (с 09:00 до 18:00 по будням, в
-                            пятницу – до 16:45)</p>
-                        <p><strong>E-mail:</strong> info@rosatom.ru</p>
-                        <p><strong>Департамент коммуникаций:</strong> (499) 949-4412, 949-4634, E-mail:
-                            press@rosatom.ru, editor@rosatom.ru (об
-                            ошибках на сайте)</p>
-                        <p><strong>Департамент международного бизнеса:</strong> (499) 949-2537 (приемная)</p>
-                        <p><strong>Департамент международного сотрудничества:</strong> (499) 949-2868 (приемная)</p>
-                        <p><strong>Управление инвестиционной политики:</strong> E-mail: ir@rosatom.ru</p>
-                        <p><strong>Управление документационного обеспечения:</strong> (499) 949-4221</p>
-                        <p><strong>Департамент устойчивого развития:</strong> E-mail: esg@rosatom.ru</p>
-                        <p><strong>Архив Росатома:</strong> (498) 658-6073 (с 09:00 до 18:00 по будням, в пятницу – до
-                            16:45), E-mail:
-                            adm@atomarhiv.ru, www.atomarhiv.ru</p>
-                        <p><strong>«Горячая линия» Росатома по противодействию коррупции и хищениям:</strong> 8 800
-                            100-0707, E-mail:
-                            0707@rosatom.ru</p>
-                </section>
         </section>
-
-
-        <aside class="birthday-panel">
-            <h3>Поздравляем<br>с Днём рождения!</h3>
-            <img src="images/person.jpg" alt="Фото сотрудника" class="birthday-photo">
-            <a href="contact.html" class="birthday-name">
-                <br>Иванов Иван Иванович<br>
-            </a>
-
-            <div class="upcoming-birthdays">
-                <h4>Дни рождения завтра:</h4>
-                <ul class="birthday-list">
-                    <li>Петров Пётр Петрович</li>
-                    <li>Сидорова Марина Александровна</li>
-                    <li>Кузнецов Иван Сергеевич</li>
-                </ul>
+        
+        <aside class="right-sidebar">
+            <div class="birthday-section">
+                <h3 id="birthday-section-title">Дни рождения</h3>
+                
+                <!-- Карусель для сегодняшних дней рождения -->
+                <div class="birthday-today">
+                    <h4>Сегодня</h4>
+                    <div class="birthday-carousel" id="today-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track" id="today-track">
+                                <!-- Карточки сегодняшних именинников -->
+                            </div>
+                        </div>
+                        <div class="carousel-controls">
+                            <button class="carousel-btn prev" id="today-prev">‹</button>
+                            <div class="carousel-dots" id="today-dots"></div>
+                            <button class="carousel-btn next" id="today-next">›</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Карусель для завтрашних дней рождения -->
+                <div class="birthday-tomorrow">
+                    <h4>Завтра</h4>
+                    <div class="birthday-carousel" id="tomorrow-carousel">
+                        <div class="carousel-container">
+                            <div class="carousel-track" id="tomorrow-track">
+                                <!-- Карточки завтрашних именинников -->
+                            </div>
+                        </div>
+                        <div class="carousel-controls">
+                            <button class="carousel-btn prev" id="tomorrow-prev">‹</button>
+                            <div class="carousel-dots" id="tomorrow-dots"></div>
+                            <button class="carousel-btn next" id="tomorrow-next">›</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </aside>
     </main>
 
-    <footer class="footer">
-        Если обнаружили неточности, напишите на почту it_rosatom@mail.ru
-    </footer>
     <script>
-        const departments = {
-            giredmet: {
-                "Инженерный": ["Разработка", "Проектирование", "Системный анализ"],
-                "Коммуникации": ["Внутренние связи", "Внешние связи"],
-                "Коммерческий": [],
-                "Бухгалтерия": []
-            },
-            graphite: {
-                "Проектный": ["Подготовка", "Реализация"],
-                "Логистика": [],
-                "Финансовый контроль": ["Аудит", "Бюджетирование"],
-                "Отдел кадров": ["Подбор", "HR-аналитика"]
+        const API_BASE = 'http://localhost:8080';
+        
+        // Глобальный кэш для отделов и секций
+        const departmentsCache = {
+            giredmet: null,
+            grafit: null
+        };
+        const sectionsCache = {};
+        
+        // Глобальная переменная для текущего института
+        let currentInstitute = 'giredmet'; // по умолчанию
+
+        // Загрузка экстренных служб
+        async function loadEmergencyServices() {
+            try {
+                const response = await fetch(`${API_BASE}/emergency`);
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.services) {
+                    const tbody = document.getElementById('emergency-services');
+                    tbody.innerHTML = '';
+                    
+                    data.services.forEach(service => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${service.name}</td>
+                            <td>${service.phone_number}</td>
+                            <td>${service.email || 'N/A'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    console.log('Экстренные службы не найдены или ошибка API:', data.error);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки экстренных служб:', error);
             }
+        }
+
+        // Загрузка дней рождения
+        async function loadBirthdays() {
+            try {
+                console.log('Loading birthdays for both institutes');
+                
+                // Обновляем заголовок
+                const titleElement = document.getElementById('birthday-section-title');
+                if (titleElement) {
+                    titleElement.textContent = 'Дни рождения (Все институты)';
+                }
+                
+                // Загружаем дни рождения для обеих организаций
+                const [giredmetTodayResponse, grafitTodayResponse, giredmetTomorrowResponse, grafitTomorrowResponse] = await Promise.all([
+                    fetch(`${API_BASE}/birthday/today?institute=giredmet`),
+                    fetch(`${API_BASE}/birthday/today?institute=grafit`),
+                    fetch(`${API_BASE}/birthday/tomorrow?institute=giredmet`),
+                    fetch(`${API_BASE}/birthday/tomorrow?institute=grafit`)
+                ]);
+                
+                // Обработка результатов для сегодня
+                let allTodayUsers = [];
+                
+                // Гиредмет сегодня
+                try {
+                    const giredmetTodayText = await giredmetTodayResponse.text();
+                    if (giredmetTodayText.trim()) {
+                        const giredmetTodayData = JSON.parse(giredmetTodayText);
+                        if (Array.isArray(giredmetTodayData)) {
+                            allTodayUsers = allTodayUsers.concat(giredmetTodayData.map(user => ({...user, institute: 'Гиредмет'})));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing Giredmet today response:', error);
+                }
+                
+                // Графит сегодня
+                try {
+                    const grafitTodayText = await grafitTodayResponse.text();
+                    if (grafitTodayText.trim()) {
+                        const grafitTodayData = JSON.parse(grafitTodayText);
+                        if (Array.isArray(grafitTodayData)) {
+                            allTodayUsers = allTodayUsers.concat(grafitTodayData.map(user => ({...user, institute: 'Графит'})));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing Grafit today response:', error);
+                }
+                
+                console.log('All today birthday users:', allTodayUsers);
+                
+                // Создание карусели для сегодняшних именинников
+                const todayTrack = document.getElementById('today-track');
+                todayTrack.innerHTML = '';
+                
+                if (allTodayUsers.length > 0) {
+                    // Создаем карточки для карусели
+                    allTodayUsers.forEach((user, index) => {
+                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                        console.log(`Adding birthday user ${index + 1}:`, fullName);
+                        
+                        // Формируем URL для фотографии
+                        const photoUrl = user.email ? 
+                            `${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(user.institute.toLowerCase() === 'гиредмет' ? 'giredmet' : 'grafit')}` :
+                            'images/person.jpg';
+                        
+                        const userCard = document.createElement('div');
+                        userCard.className = 'birthday-card';
+                        userCard.innerHTML = `
+                            <div class="card-photo-container">
+                                <img src="${photoUrl}" alt="Фото сотрудника" class="card-photo" onerror="this.src='images/person.jpg'">
+                            </div>
+                            <div class="card-info">
+                                <div class="card-name">${shortName}</div>
+                                <div class="card-institute">${user.institute}</div>
+                            </div>
+                        `;
+                        todayTrack.appendChild(userCard);
+                    });
+                    
+                    // Инициализируем карусель для сегодня
+                    initializeCarousel('today', allTodayUsers.length);
+                    
+                    // Показываем карусель
+                    const todayCarousel = document.getElementById('today-carousel');
+                    if (todayCarousel) {
+                        todayCarousel.style.display = 'block';
+                        console.log('Showing today carousel -', allTodayUsers.length, 'users');
+                    }
+                } else {
+                    // Скрываем карусель если нет именинников
+                    const todayCarousel = document.getElementById('today-carousel');
+                    if (todayCarousel) {
+                        todayCarousel.style.display = 'none';
+                        console.log('Hiding today carousel - no users');
+                    }
+                    
+                    // Добавляем сообщение об отсутствии именинников
+                    todayTrack.innerHTML = '<div class="no-birthdays">Нет именинников сегодня</div>';
+                }
+                
+                // Обработка результатов для завтра
+                let allTomorrowUsers = [];
+                
+                // Гиредмет завтра
+                try {
+                    const giredmetTomorrowText = await giredmetTomorrowResponse.text();
+                    if (giredmetTomorrowText.trim()) {
+                        const giredmetTomorrowData = JSON.parse(giredmetTomorrowText);
+                        if (Array.isArray(giredmetTomorrowData)) {
+                            allTomorrowUsers = allTomorrowUsers.concat(giredmetTomorrowData.map(user => ({...user, institute: 'Гиредмет'})));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing Giredmet tomorrow response:', error);
+                }
+                
+                // Графит завтра
+                try {
+                    const grafitTomorrowText = await grafitTomorrowResponse.text();
+                    if (grafitTomorrowText.trim()) {
+                        const grafitTomorrowData = JSON.parse(grafitTomorrowText);
+                        if (Array.isArray(grafitTomorrowData)) {
+                            allTomorrowUsers = allTomorrowUsers.concat(grafitTomorrowData.map(user => ({...user, institute: 'Графит'})));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error parsing Grafit tomorrow response:', error);
+                }
+                
+                console.log('All tomorrow birthday users:', allTomorrowUsers);
+                
+                // Создание карусели для завтрашних именинников
+                const tomorrowTrack = document.getElementById('tomorrow-track');
+                tomorrowTrack.innerHTML = '';
+                
+                if (allTomorrowUsers.length > 0) {
+                    console.log('Number of users with birthday tomorrow:', allTomorrowUsers.length);
+                    
+                    allTomorrowUsers.forEach((user, index) => {
+                        const fullName = `${user.surname} ${user.name} ${user.middle_name || ''}`.trim();
+                        const shortName = `${user.surname} ${user.name ? user.name.charAt(0) + '.' : ''}${user.middle_name ? user.middle_name.charAt(0) + '.' : ''}`;
+                        console.log(`Adding tomorrow birthday user ${index + 1}:`, fullName);
+                        
+                        // Формируем URL для фотографии
+                        const photoUrl = user.email ? 
+                            `${API_BASE}/workers/${encodeURIComponent(user.email)}/photo?institute=${encodeURIComponent(user.institute.toLowerCase() === 'гиредмет' ? 'giredmet' : 'grafit')}` :
+                            'images/person.jpg';
+                        
+                        const userCard = document.createElement('div');
+                        userCard.className = 'birthday-card';
+                        userCard.innerHTML = `
+                            <div class="card-photo-container">
+                                <img src="${photoUrl}" alt="Фото сотрудника" class="card-photo" onerror="this.src='images/person.jpg'">
+                            </div>
+                            <div class="card-info">
+                                <div class="card-name">${shortName}</div>
+                                <div class="card-institute">${user.institute}</div>
+                            </div>
+                        `;
+                        tomorrowTrack.appendChild(userCard);
+                    });
+                    
+                    // Инициализируем карусель для завтра
+                    initializeCarousel('tomorrow', allTomorrowUsers.length);
+                    
+                    // Показываем карусель
+                    const tomorrowCarousel = document.getElementById('tomorrow-carousel');
+                    if (tomorrowCarousel) {
+                        tomorrowCarousel.style.display = 'block';
+                    }
+                } else {
+                    // Скрываем карусель если нет именинников
+                    const tomorrowCarousel = document.getElementById('tomorrow-carousel');
+                    if (tomorrowCarousel) {
+                        tomorrowCarousel.style.display = 'none';
+                    }
+                    
+                    // Добавляем сообщение об отсутствии именинников
+                    tomorrowTrack.innerHTML = '<div class="no-birthdays">Нет именинников завтра</div>';
+                }
+                
+            } catch (error) {
+                console.error('Error loading birthdays:', error);
+            }
+        }
+
+        // Очистка интервалов при закрытии страницы
+        window.addEventListener('beforeunload', () => {
+            stopAutoSlide('today');
+            stopAutoSlide('tomorrow');
+        });
+
+        // Карусель для дней рождения
+        const carouselStates = {
+            today: { currentIndex: 0, totalCards: 0, intervalId: null },
+            tomorrow: { currentIndex: 0, totalCards: 0, intervalId: null }
         };
 
-        function switchDivision(name) {
-            const list = document.getElementById('department-list');
+        function initializeCarousel(type, totalCards) {
+            const state = carouselStates[type];
+            state.currentIndex = 0;
+            state.totalCards = totalCards;
+            
+            if (totalCards === 0) return;
+            
+            // Создаем точки индикации
+            createCarouselDots(type, totalCards);
+            
+            // Настраиваем кнопки
+            setupCarouselControls(type);
+            
+            // Показываем первую карточку
+            showCard(type, 0);
+            
+            // Настраиваем события наведения мыши
+            setupMouseEvents(type);
+            
+            // Запускаем автопрокрутку
+            startAutoSlide(type);
+        }
 
+        function setupMouseEvents(type) {
+            const carousel = document.getElementById(`${type}-carousel`);
+            
+            carousel.addEventListener('mouseenter', () => {
+                stopAutoSlide(type);
+            });
+            
+            carousel.addEventListener('mouseleave', () => {
+                startAutoSlide(type);
+            });
+        }
+
+        function createCarouselDots(type, totalCards) {
+            const dotsContainer = document.getElementById(`${type}-dots`);
+            dotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < totalCards; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'carousel-dot';
+                if (i === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToCard(type, i));
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function setupCarouselControls(type) {
+            const prevBtn = document.getElementById(`${type}-prev`);
+            const nextBtn = document.getElementById(`${type}-next`);
+            
+            prevBtn.addEventListener('click', () => prevCard(type));
+            nextBtn.addEventListener('click', () => nextCard(type));
+        }
+
+        function showCard(type, index) {
+            const track = document.getElementById(`${type}-track`);
+            const cards = track.querySelectorAll('.birthday-card');
+            const dots = document.querySelectorAll(`#${type}-dots .carousel-dot`);
+            
+            // Скрываем все карточки
+            cards.forEach(card => card.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+            
+            // Показываем нужную карточку
+            if (cards[index]) {
+                cards[index].classList.add('active');
+            }
+            if (dots[index]) {
+                dots[index].classList.add('active');
+            }
+            
+            carouselStates[type].currentIndex = index;
+        }
+
+
+        function nextCard(type) {
+            const state = carouselStates[type];
+            const nextIndex = (state.currentIndex + 1) % state.totalCards;
+            showCard(type, nextIndex);
+            resetAutoSlide(type);
+        }
+
+
+        function prevCard(type) {
+            const state = carouselStates[type];
+            const prevIndex = (state.currentIndex - 1 + state.totalCards) % state.totalCards;
+            showCard(type, prevIndex);
+            resetAutoSlide(type);
+        }
+
+        function goToCard(type, index) {
+            showCard(type, index);
+            resetAutoSlide(type);
+        }
+
+        function startAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.totalCards <= 1) return;
+            
+            state.intervalId = setInterval(() => {
+                nextCard(type);
+            }, 4000); // Переключение каждые 4 секунды
+        }
+
+        function resetAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.intervalId) {
+                clearInterval(state.intervalId);
+            }
+            startAutoSlide(type);
+        }
+
+        function stopAutoSlide(type) {
+            const state = carouselStates[type];
+            if (state.intervalId) {
+                clearInterval(state.intervalId);
+                state.intervalId = null;
+            }
+        }
+
+        // Загрузка отделов с кэшированием
+        async function loadDepartments(institute) {
+            try {
+                // Проверяем кэш
+                if (departmentsCache[institute]) {
+                    console.log(`Используем кэш отделов для ${institute}`);
+                    renderDepartments(departmentsCache[institute], institute);
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/departments?institute=${encodeURIComponent(institute)}`);
+                const data = await response.json();
+                
+                console.log(`Отделы для ${institute}:`, data);
+                
+                if (data.status === 'Ok' && data.departments) {
+                    // Сохраняем в кэш
+                    departmentsCache[institute] = data.departments;
+                    renderDepartments(data.departments, institute);
+                } else {
+                    console.error('Ошибка загрузки отделов:', data.error);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки отделов:', error);
+            }
+        }
+
+        // Отрисовка отделов
+        function renderDepartments(departments, institute) {
+            const list = document.getElementById('department-list');
             list.innerHTML = '';
 
-            Object.entries(departments[name]).forEach(([dept, subdepts]) => {
+            departments.forEach(dept => {
                 const li = document.createElement('li');
-                li.classList.add('department-item');
-                li.innerHTML = `<span class="department-name">${dept}</span>`;
+                li.className = 'department-item';
+                li.innerHTML = `<span class="department-name">${dept.name}</span>`;
+                
+                // Всегда делаем отдел кликабельным для перехода на страницу
+                li.querySelector('.department-name').onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}`;
+                };
 
-
-                if (subdepts.length > 0) {
+                // Добавляем стрелку сразу, но секции загружаем только по клику
+                const arrow = document.createElement('span');
+                arrow.className = 'department-arrow';
+                arrow.innerHTML = ' ▼';
+                arrow.style.cursor = 'pointer';
+                arrow.style.fontSize = '12px';
+                arrow.style.marginLeft = '5px';
+                arrow.style.color = '#999';
+                li.querySelector('.department-name').appendChild(arrow);
+                
+                // Создаем пустой список секций
                     const subList = document.createElement('ul');
                     subList.classList.add('subdepartment-list');
                     subList.style.display = 'none';
-
-                    subdepts.forEach(sub => {
-                        const subLi = document.createElement('li');
-                        subLi.textContent = sub;
-                        subLi.onclick = () => {
-                            window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}&subdepartment=${encodeURIComponent(sub)}`;
-                        };
-                        subList.appendChild(subLi);
-                    });
-
-                    li.appendChild(subList);
-                    li.querySelector('.department-name').onclick = () => {
-                        subList.style.display = subList.style.display === 'none' ? 'block' : 'none';
-                    };
-                } else {
-                    li.onclick = () => {
-                        window.location.href = `departments.html?division=${encodeURIComponent(name)}&department=${encodeURIComponent(dept)}`;
-                    };
-                }
+                li.appendChild(subList);
+                
+                // Обработчик для раскрытия/скрытия подотделов (только на стрелку)
+                arrow.onclick = (e) => {
+                    e.stopPropagation(); // Предотвращаем переход на страницу отдела
+                    
+                    if (subList.style.display === 'none') {
+                        // Загружаем секции только при первом раскрытии
+                        loadDepartmentSections(dept, institute, subList, arrow);
+                        subList.style.display = 'block';
+                        arrow.innerHTML = ' ▲';
+                    } else {
+                        subList.style.display = 'none';
+                        arrow.innerHTML = ' ▼';
+                    }
+                };
 
                 list.appendChild(li);
             });
+        }
 
-            const buttonContainer = document.getElementById('division-button-container');
-            const divisionButton = document.getElementById('current-division-btn');
+        // Загрузка секций отдела по требованию
+        async function loadDepartmentSections(dept, institute, subList, arrow) {
+            const cacheKey = `${institute}-${dept.name}`;
+            
+            console.log(`Загружаю секции для отдела: ${dept.name}`);
+            try {
+                // Проверяем кэш секций
+                if (sectionsCache[cacheKey]) {
+                    console.log(`Используем кэш секций для ${dept.name}`);
+                    renderSections(sectionsCache[cacheKey], dept, institute, subList);
+                    return;
+                }
 
-            buttonContainer.style.display = 'block';
-            divisionButton.textContent = `Все контакты ${capitalize(name)}`;
-            divisionButton.onclick = () => {
-                window.location.href = `division.html?division=${encodeURIComponent(name)}`;
-            };
+                // Показываем индикатор загрузки
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Загрузка...</li>';
+                
+                const sectionsResponse = await fetch(`${API_BASE}/departments/${encodeURIComponent(dept.name)}?institute=${encodeURIComponent(institute)}`);
+                const sectionsData = await sectionsResponse.json();
+                
+                console.log(`Секции для ${dept.name}:`, sectionsData);
+                
+                if (sectionsData.status === 'Ok' && sectionsData.sections) {
+                    // Сохраняем в кэш
+                    sectionsCache[cacheKey] = sectionsData.sections;
+                    renderSections(sectionsData.sections, dept, institute, subList);
+                } else {
+                    console.log(`Секции не найдены для ${dept.name}:`, sectionsData.error);
+                    subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                }
+            } catch (err) {
+                console.error(`Ошибка загрузки секций для отдела ${dept.name}:`, err);
+                subList.innerHTML = '<li style="color: #d32f2f; font-style: italic;">Ошибка загрузки</li>';
+            }
+        }
 
-            document.getElementById('link-giredmet').classList.remove('active-division');
-            document.getElementById('link-graphite').classList.remove('active-division');
-            document.getElementById(`link-${name}`).classList.add('active-division');
+        // Отрисовка секций
+        function renderSections(sections, dept, institute, subList) {
+            subList.innerHTML = '';
+            
+            if (sections.length === 0) {
+                subList.innerHTML = '<li style="color: #999; font-style: italic;">Подотделов нет</li>';
+                return;
+            }
+
+            sections.forEach(section => {
+                const subLi = document.createElement('li');
+                subLi.textContent = section.name;
+                subLi.onclick = () => {
+                    window.location.href = `departments.html?division=${encodeURIComponent(institute)}&department=${encodeURIComponent(dept.name)}&section=${encodeURIComponent(section.name)}`;
+                };
+                subList.appendChild(subLi);
+            });
         }
 
         function capitalize(str) {
+            if (!str) return '';
             const map = {
                 giredmet: "Гиредмет",
-                graphite: "Графит"
+                grafit: "Графит"
             };
             return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
         }
 
-        function openAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "flex";
-        }
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmergencyServices();
+            loadDepartments('giredmet'); // Загружаем отделы Гиредмет по умолчанию
+            loadBirthdays(); // Загружаем дни рождения для обеих организаций
+            updateHeaderButtons();
+        });
 
-        function closeAddDepartmentModal() {
-            document.getElementById("addDepartmentModal").style.display = "none";
-        }
-
-
-        window.onload = () => {
-            switchDivision('giredmet');
-        };
-
-        window.onclick = function (event) {
-            if (event.target === document.getElementById("addDepartmentModal")) {
-                closeAddDepartmentModal();
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.email) {
+                    return {
+                        email: data.email,
+                        role: data.role
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                return null;
             }
-        };
+        }
 
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = 'Гость';
+                        }
+                        
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            ${adminPanelButton}
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error updating header with user info:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
+
+        // Удалена функция switchDivision - теперь институты переходят напрямую на division.html
     </script>
-
-    <div id="addDepartmentModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeAddDepartmentModal()">&times;</span>
-            <h2>Добавление отдела</h2>
-            <p class="modal-subtitle">Укажите название отдела<br>Отдел будет добавлен в выбранный институт</p>
-            <form id="departmentForm">
-                <input type="text" placeholder="Название отдела" required>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn" onclick="closeAddDepartmentModal()">Отмена</button>
-                    <button type="submit" class="submit-btn">Добавить</button>
-                </div>
-            </form>
-        </div>
-    </div>
 </body>
 
 </html>

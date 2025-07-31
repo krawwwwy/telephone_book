@@ -22,6 +22,7 @@
                 Админ-панель
             </a>
             <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+            <button class="btn-secondary" onclick="setTestToken()" title="Для тестирования">Тест-токен</button>
         </div>
     </header>
 
@@ -35,7 +36,7 @@
                     <div class="profile-photo">
                         <img src="images/person.jpg" alt="Фото сотрудника" id="profileImage">
                     </div>
-                    <div class="photo-actions">
+                    <div class="photo-actions" style="display: none;">
                         <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
                         <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
                         <input type="file" id="photoInput" style="display: none">
@@ -79,13 +80,28 @@
             <span class="close-btn" onclick="closeEditModal()">&times;</span>
             <h2>Редактировать контакт</h2>
             <form id="editForm">
-                <input type="text" id="editName" placeholder="ФИО" required>
-                <input type="text" id="editPosition" placeholder="Должность" required>
-                <input type="text" id="editDepartment" placeholder="Отдел" required>
+                <input type="text" id="editSurname" placeholder="Фамилия" required>
+                <input type="text" id="editName" placeholder="Имя" required>
+                <input type="text" id="editMiddleName" placeholder="Отчество">
+                <input type="text" id="editPosition" placeholder="Должность">
+                <input type="text" id="editDepartment" placeholder="Отдел">
+                <input type="text" id="editSection" placeholder="Подотдел">
+                <input type="text" id="editCabinet" placeholder="Кабинет">
                 <input type="tel" id="editWorkPhone" placeholder="Рабочий телефон" required>
-                <input type="tel" id="editPersonalPhone" placeholder="Личный телефон">
                 <input type="email" id="editEmail" placeholder="Email" required>
-                <input type="text" id="editBirthday" placeholder="Дата рождения">
+                <input type="date" id="editBirthday" placeholder="Дата рождения">
+                <textarea id="editDescription" placeholder="Описание" rows="3"></textarea>
+                <div class="file-upload-wrapper">
+                    <label for="editPhoto" class="file-upload-label">
+                        <span class="file-upload-text">Обновить фотографию (необязательно)</span>
+                        <span class="file-upload-hint">Максимум 5 МБ, форматы: JPG, PNG, GIF, WebP</span>
+                    </label>
+                    <input type="file" id="editPhoto" accept="image/*" class="file-upload-input">
+                    <div class="photo-preview" id="editPhotoPreview" style="display: none;">
+                        <img id="editPreviewImage" alt="Предпросмотр фотографии">
+                        <button type="button" class="remove-photo-btn" onclick="removeEditPhotoPreview()">&times;</button>
+                    </div>
+                </div>
                 <div class="modal-buttons">
                     <button type="button" class="cancel-btn" onclick="closeEditModal()">Отмена</button>
                     <button type="submit" class="submit-btn">Сохранить</button>
@@ -120,128 +136,833 @@
         </div>
     </div>
 
-    <div id="deletePhotoModal" class="modal">
+    <div id="photoDeleteModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closePhotoDeleteModal()">&times;</span>
-            <h2>Удалить фото?</h2>
-            <p class="modal-subtitle">Вы уверены, что хотите удалить фотографию?</p>
+            <h2>Удаление фотографии</h2>
+            <p>Вы уверены, что хотите удалить фотографию сотрудника?</p>
             <div class="modal-buttons">
                 <button class="cancel-btn" onclick="closePhotoDeleteModal()">Отмена</button>
-                <button class="submit-btn" onclick="confirmPhotoDelete()">Подтвердить</button>
+                <button class="submit-btn" onclick="confirmPhotoDelete()">Удалить</button>
             </div>
         </div>
     </div>
 
     <script>
-        window.onload = () => {
-            const params = new URLSearchParams(window.location.search);
-            const division = params.get('division');
-            const department = params.get('department');
-            const subdepartment = params.get('subdepartment');
+        const API_BASE = 'http://localhost:8080';
+        
+        // Получаем email из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        console.log(`[DEBUG] Extracted email from URL: '${email}'`);
+        let currentInstitute = '';
+        let currentUser = null;
+        let currentHasPhoto = false;
 
+        // Получение информации о текущем пользователе
+        async function getCurrentUserInfo() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return null;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/user-info`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API user-info недоступен');
+                    return null;
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.email) {
+                    return {
+                        email: data.email,
+                        role: data.role
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Ошибка при получении информации о пользователе:', error);
+                return null;
+            }
+        }
+
+        // Обновление header с информацией о пользователе
+        async function updateHeaderButtons() {
+            const authToken = localStorage.getItem('authToken');
+            const headerRight = document.querySelector('.header-right');
+            
+            if (!headerRight) return;
+            
+            if (authToken) {
+                try {
+                    const userInfo = await getCurrentUserInfo();
+                    
+                    if (userInfo) {
+                        // Форматируем роль для отображения
+                        let roleDisplay = '';
+                        switch (userInfo.role) {
+                            case 'admin':
+                                roleDisplay = 'Администратор';
+                                break;
+                            case 'user':
+                                roleDisplay = 'Пользователь';
+                                break;
+                            default:
+                                roleDisplay = 'Гость';
+                        }
+                        
+                        // Показываем кнопку админ-панели только для администраторов
+                        const adminPanelButton = userInfo.role === 'admin' 
+                            ? `<a href="admin.html" class="btn-primary">Админ-панель</a>`
+                            : '';
+                        
+                        headerRight.innerHTML = `
+                            <div class="user-info">
+                                <span class="user-email">${userInfo.email}</span>
+                                <span class="user-role">${roleDisplay}</span>
+                            </div>
+                            ${adminPanelButton}
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    } else {
+                        headerRight.innerHTML = `
+                            <span class="user-info">Авторизован</span>
+                            <button class="btn-primary" onclick="logout()">Выйти</button>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error updating header with user info:', error);
+                    headerRight.innerHTML = `
+                        <span class="user-info">Авторизован</span>
+                        <button class="btn-primary" onclick="logout()">Выйти</button>
+                    `;
+                }
+            } else {
+                headerRight.innerHTML = `
+                    <button class="btn-primary" onclick="location.href='login.html'">Войти</button>
+                `;
+            }
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('authToken');
+            alert('Вы вышли из системы. Страница будет обновлена.');
+            location.reload();
+        }
+        
+        // Загрузка данных пользователя
+        async function loadUserData() {
+            if (!email) {
+                alert('Email не указан');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            try {
+                // Нужно определить институт для запроса - попробуем оба
+                let userData = null;
+                
+                for (const institute of ['giredmet', 'grafit']) {
+                    try {
+                        const requestUrl = `${API_BASE}/workers/${encodeURIComponent(email)}?institute=${institute}`;
+                        console.log(`[DEBUG] Making request to: ${requestUrl}`);
+                        const response = await fetch(requestUrl);
+                        const data = await response.json();
+                        
+                        if (data.status === 'Ok' && data.user) {
+                            userData = data.user;
+                            currentInstitute = institute;
+                            currentUser = userData;
+                            break;
+                        }
+                    } catch (err) {
+                        console.log(`Пользователь не найден в ${institute}`);
+                    }
+                }
+                
+                if (userData) {
+                    // Заполняем данные на странице
+                    const fullName = `${userData.surname || ''} ${userData.name || ''} ${userData.middle_name || ''}`.trim();
+                    document.getElementById('fullName').textContent = fullName || 'Не указано';
+                    document.getElementById('position').textContent = userData.position || 'Не указано';
+                    document.getElementById('department').textContent = userData.department || 'Не указано';
+                    document.getElementById('sub').textContent = userData.section || 'Не указано';
+                    document.getElementById('cab').textContent = userData.cabinet || 'Не указано';
+                    document.getElementById('workPhone').textContent = userData.phone_number || 'Не указано';
+                    
+                    // Убираем личный телефон так как его нет в модели
+                    const personalPhoneRow = document.getElementById('personalPhone').closest('p');
+                    if (personalPhoneRow) {
+                        personalPhoneRow.style.display = 'none';
+                    }
+                    
+                    document.getElementById('email').textContent = userData.email || 'Не указано';
+                    
+                    // Форматируем дату рождения
+                    if (userData.birth_date && userData.birth_date !== '0001-01-01T00:00:00Z') {
+                        const birthDate = new Date(userData.birth_date);
+                        const options = { day: 'numeric', month: 'long' };
+                        document.getElementById('birthday').textContent = birthDate.toLocaleDateString('ru-RU', options);
+                    } else {
+                        document.getElementById('birthday').textContent = 'Не указано';
+                    }
+                    
+                    // Обновляем описание если есть
+                    const descriptionElement = document.querySelector('.profile-description p');
+                    if (descriptionElement) {
+                        if (userData.description) {
+                        descriptionElement.textContent = userData.description;
+                        } else {
+                            descriptionElement.textContent = 'Описание не добавлено.';
+                        }
+                    }
+                    
+                    // Загружаем фотографию
+                    loadUserPhoto(email, currentInstitute);
+                    
+                    // Обновляем breadcrumbs
+                    updateBreadcrumbs(userData);
+                    
+                } else {
+                    alert('Пользователь не найден');
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+                alert('Ошибка загрузки данных');
+            }
+        }
+        
+        // Загрузка фотографии пользователя
+        async function loadUserPhoto(email, institute) {
+            try {
+                const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
+                const response = await fetch(photoUrl);
+                
+                console.log('Photo check response:', response.status, response.ok); // Отладка
+                
+                if (response.ok) {
+                    // Проверяем тип содержимого - если это изображение, то фото есть
+                    const contentType = response.headers.get('content-type');
+                    console.log('Content-Type:', contentType); // Отладка
+                    
+                    if (contentType && contentType.startsWith('image/')) {
+                        // Это реальная фотография
+                        const profileImage = document.getElementById('profileImage');
+                        profileImage.src = photoUrl;
+                        profileImage.onerror = function() {
+                            // Если фото не загружается, показываем placeholder
+                            this.src = 'images/person.jpg';
+                        };
+                        
+                        console.log('Photo found, updating buttons with hasPhoto=true'); // Отладка
+                        // Обновляем отображение кнопок для случая, когда фото есть
+                        updatePhotoButtons(true);
+                    } else {
+                        // Это JSON ответ об отсутствии фото
+                        document.getElementById('profileImage').src = 'images/person.jpg';
+                        
+                        console.log('No photo (JSON response), updating buttons with hasPhoto=false'); // Отладка
+                        // Обновляем отображение кнопок для случая, когда фото нет
+                        updatePhotoButtons(false);
+                    }
+                } else {
+                    // Если фото нет, используем placeholder
+                    document.getElementById('profileImage').src = 'images/person.jpg';
+                    
+                    console.log('Photo not found, updating buttons with hasPhoto=false'); // Отладка
+                    // Обновляем отображение кнопок для случая, когда фото нет
+                    updatePhotoButtons(false);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки фотографии:', error);
+                document.getElementById('profileImage').src = 'images/person.jpg';
+                console.log('Photo load error, updating buttons with hasPhoto=false'); // Отладка
+                updatePhotoButtons(false);
+            }
+        }
+
+        // Обновление отображения кнопок в зависимости от наличия фото и роли пользователя
+        async function updatePhotoButtons(hasPhoto) {
+            currentHasPhoto = hasPhoto;
+            const photoActions = document.querySelector('.photo-actions');
+            const authToken = localStorage.getItem('authToken');
+            
+            console.log('=== updatePhotoButtons called ===');
+            console.log('hasPhoto:', hasPhoto);
+            console.log('authToken present:', !!authToken);
+            
+            if (!authToken) {
+                // Если нет токена, скрываем все кнопки
+                console.log('No auth token, hiding buttons');
+                photoActions.style.display = 'none';
+                return;
+            }
+            
+            try {
+                // Проверяем роль пользователя
+                const userRole = await getUserRole();
+                console.log('User role:', userRole, 'Has photo:', hasPhoto); // Для отладки
+                
+                photoActions.innerHTML = '';
+                
+                if (!hasPhoto) {
+                    console.log('No photo - checking user role for upload permission');
+                    // Если фото нет, любые авторизованные пользователи (user или admin) могут загрузить
+                    if (userRole === 'user' || userRole === 'admin') {
+                        console.log('User can upload photo - showing upload button');
+                        photoActions.innerHTML = `
+                            <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                            <input type="file" id="photoInput" style="display: none">
+                        `;
+                    } else {
+                        console.log('User cannot upload photo - hiding buttons');
+                        // Неавторизованные пользователи не видят кнопки
+                        photoActions.style.display = 'none';
+                        return;
+                    }
+                } else {
+                    console.log('Photo exists - checking user role for modification permission');
+                    // Если фото есть, показываем кнопки в зависимости от роли
+                    if (userRole === 'admin') {
+                        console.log('Admin can modify photo - showing modify/delete buttons');
+                        photoActions.innerHTML = `
+                            <button class="link-btn" onclick="openPhotoUpload()">Изменить фото</button>
+                            <button class="link-btn" onclick="openPhotoDeleteModal()">Удалить фото</button>
+                            <input type="file" id="photoInput" style="display: none">
+                        `;
+                    } else if (userRole === 'user') {
+                        console.log('Regular user cannot modify existing photo - showing disabled message');
+                        // Обычные пользователи не могут изменять существующие фото
+                        photoActions.innerHTML = `
+                            <span class="link-btn disabled">Только админы могут изменять фото</span>
+                        `;
+                    } else {
+                        console.log('Unauthorized user - hiding buttons');
+                        // Неавторизованные пользователи не видят кнопки
+                        photoActions.style.display = 'none';
+                        return;
+                    }
+                }
+                
+                // Добавляем обработчик событий для нового input
+                const photoInput = document.getElementById('photoInput');
+                if (photoInput) {
+                    setupPhotoInputHandler(photoInput);
+                }
+                
+                photoActions.style.display = 'block';
+                console.log('=== updatePhotoButtons completed ===');
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                // При ошибке показываем кнопки для авторизованных пользователей
+                if (!hasPhoto) {
+                    console.log('Error occurred but showing fallback upload button');
+                    photoActions.innerHTML = `
+                        <button class="link-btn" onclick="openPhotoUpload()">Загрузить фото</button>
+                        <input type="file" id="photoInput" style="display: none">
+                    `;
+                    
+                    const photoInput = document.getElementById('photoInput');
+                    if (photoInput) {
+                        setupPhotoInputHandler(photoInput);
+                    }
+                    
+                    photoActions.style.display = 'block';
+                } else {
+                    photoActions.style.display = 'none';
+                }
+            }
+        }
+
+        // Проверка наличия фото у пользователя
+        async function checkUserHasPhoto(email, institute) {
+            try {
+                const photoUrl = `${API_BASE}/workers/${encodeURIComponent(email)}/photo?institute=${institute}`;
+                const response = await fetch(photoUrl);
+                
+                if (response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    return contentType && contentType.startsWith('image/');
+                }
+                
+                return false;
+            } catch (error) {
+                console.error('Ошибка при проверке фото:', error);
+                return false;
+            }
+        }
+
+        // Проверка роли пользователя через API
+        async function getUserRole() {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) return 'guest';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/check-role`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('API check-role недоступен, используем fallback');
+                    return 'user'; // По умолчанию считаем авторизованного пользователя обычным пользователем
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'Ok' && data.role) {
+                    return data.role;
+                }
+                
+                console.warn('Неожиданный ответ от API, используем fallback');
+                return 'user';
+            } catch (error) {
+                console.error('Ошибка при проверке роли:', error);
+                console.warn('Используем fallback роль user для авторизованного пользователя');
+                return 'user'; // Если есть токен, но API недоступен, считаем пользователем
+            }
+        }
+        
+        // Обновление breadcrumbs
+        function updateBreadcrumbs(userData) {
             const breadcrumbs = document.getElementById('breadcrumbs');
-            let html = `<a href="index.html">Главная</a>`;
+            const institute = currentInstitute === 'giredmet' ? 'ГИРЕДМЕТ' : 'ГРАФИТ';
+            const institutePage = currentInstitute === 'giredmet' ? 'division.html?division=giredmet' : 'division.html?division=grafit';
+            
+            breadcrumbs.innerHTML = `
+                <a href="index.html">Главная</a> → 
+                <a href="${institutePage}">${institute}</a> → 
+                <a href="departments.html?division=${currentInstitute}&department=${encodeURIComponent(userData.department || '')}">${userData.department || 'Отдел'}</a> → 
+                <span>${userData.surname} ${userData.name}</span>
+            `;
+        }
+        
+        // Функция для установки тестового токена (для отладки)
+        function setTestToken() {
+            localStorage.setItem('authToken', 'test-token-user-' + Date.now());
+            alert('Тестовый токен установлен. Обновите страницу для применения изменений.');
+            location.reload();
+        }
 
-            if (division) {
-                const readableDivision = capitalizeDivision(division);
-                html += ` / <span>${readableDivision}</span>`;
+        // Загружаем данные при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Отладочная информация
+            const authToken = localStorage.getItem('authToken');
+            console.log('Page loaded. Auth token present:', !!authToken);
+            
+            // Обновляем header
+            updateHeaderButtons();
+            
+            loadUserData();
+            
+            // Добавляем обработчик формы редактирования
+            document.getElementById('editForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveUserChanges();
+            });
+            
+            // Инициализируем обработчик фото если элемент уже существует
+            const existingPhotoInput = document.getElementById('photoInput');
+            if (existingPhotoInput) {
+                setupPhotoInputHandler(existingPhotoInput);
             }
-
-            if (department) {
-                html += ` / <span>${department}</span>`;
+            
+            // Добавляем визуальную отладочную информацию
+            if (authToken) {
+                document.title += ' [АВТОРИЗОВАН]';
+            } else {
+                document.title += ' [ГОСТЬ]';
             }
+        });
 
-            if (subdepartment) {
-                html += ` / <a href="departments.html?division=${encodeURIComponent(division)}&department=${encodeURIComponent(department)}&subdepartment=${encodeURIComponent(subdepartment)}">${subdepartment}</a>`;
+        // Сохранение изменений пользователя
+        async function saveUserChanges() {
+            if (!currentUser || !currentInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для редактирования необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
             }
-
-            html += ` / Профиль контакта`;
-            breadcrumbs.innerHTML = html;
-        };
-
-        function capitalizeDivision(str) {
-            const map = {
-                giredmet: "Гиредмет",
-                graphite: "Графит"
-            };
-            return map[str.toLowerCase()] || str.charAt(0).toUpperCase() + str.slice(1);
+            
+            try {
+                const formData = {
+                    institute: currentInstitute,
+                    old_email: currentUser.email,
+                    surname: document.getElementById('editSurname').value.trim(),
+                    name: document.getElementById('editName').value.trim(),
+                    middle_name: document.getElementById('editMiddleName').value.trim(),
+                    position: document.getElementById('editPosition').value.trim(),
+                    department: document.getElementById('editDepartment').value.trim(),
+                    section: document.getElementById('editSection').value.trim(),
+                    cabinet: document.getElementById('editCabinet').value.trim(),
+                    phone_number: document.getElementById('editWorkPhone').value.trim(),
+                    email: document.getElementById('editEmail').value.trim(),
+                    description: document.getElementById('editDescription').value.trim()
+                };
+                
+                const birthDate = document.getElementById('editBirthday').value;
+                if (birthDate) {
+                    formData.birth_date = new Date(birthDate).toISOString();
+                }
+                
+                // Сначала обновляем основные данные пользователя
+                const response = await fetch(`${API_BASE}/workers`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    // Проверяем, есть ли новая фотография для загрузки
+                    const editPhotoInput = document.getElementById('editPhoto');
+                    if (editPhotoInput.files.length > 0) {
+                        const photoFile = editPhotoInput.files[0];
+                        const photoFormData = new FormData();
+                        photoFormData.append('photo', photoFile);
+                        
+                        try {
+                            const photoResponse = await fetch(`${API_BASE}/workers/${encodeURIComponent(currentUser.email)}/photo?institute=${currentInstitute}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${authToken}`
+                                },
+                                body: photoFormData
+                            });
+                            
+                            const photoResult = await photoResponse.json();
+                            
+                            if (photoResult.status !== 'Ok') {
+                                if (photoResult.error && photoResult.error.includes('forbidden')) {
+                                    alert('Основные данные обновлены, но у вас нет прав для изменения фотографии. Обратитесь к администратору.');
+                                } else {
+                                    alert('Основные данные обновлены, но ошибка при загрузке фотографии: ' + (photoResult.error || 'Неизвестная ошибка'));
+                                }
+                            }
+                        } catch (photoError) {
+                            console.error('Ошибка при загрузке фотографии:', photoError);
+                            alert('Основные данные обновлены, но ошибка при загрузке фотографии');
+                        }
+                    }
+                    
+                    alert('Контакт успешно обновлен');
+                    closeEditModal();
+                    
+                    // Если email изменился, перенаправляем на новый URL
+                    if (formData.email !== currentUser.email) {
+                        window.location.href = `contact.html?email=${encodeURIComponent(formData.email)}`;
+                    } else {
+                        // Перезагружаем данные
+                        loadUserData();
+                        loadUserPhoto(currentUser.email, currentInstitute);
+                    }
+                } else {
+                    alert('Ошибка при обновлении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении контакта:', error);
+                alert('Ошибка при обновлении контакта: ' + error.message);
+            }
         }
 
         function openEditModal() {
+            if (!currentUser) return;
+            
+            // Заполняем форму редактирования текущими данными
+            document.getElementById('editSurname').value = currentUser.surname || '';
+            document.getElementById('editName').value = currentUser.name || '';
+            document.getElementById('editMiddleName').value = currentUser.middle_name || '';
+            document.getElementById('editPosition').value = currentUser.position || '';
+            document.getElementById('editDepartment').value = currentUser.department || '';
+            document.getElementById('editSection').value = currentUser.section || '';
+            document.getElementById('editCabinet').value = currentUser.cabinet || '';
+            document.getElementById('editWorkPhone').value = currentUser.phone_number || '';
+            document.getElementById('editEmail').value = currentUser.email || '';
+            
+            if (currentUser.birth_date && currentUser.birth_date !== '0001-01-01T00:00:00Z') {
+                const birthDate = new Date(currentUser.birth_date);
+                const formattedDate = birthDate.toISOString().split('T')[0];
+                document.getElementById('editBirthday').value = formattedDate;
+            }
+            
+            document.getElementById('editDescription').value = currentUser.description || '';
+            
+            // Очищаем превью фотографии
+            removeEditPhotoPreview();
+            
             document.getElementById('editModal').style.display = 'flex';
-            document.getElementById('editName').value = document.getElementById('fullName').innerText;
-            document.getElementById('editPosition').value = document.getElementById('position').innerText;
-            document.getElementById('editDepartment').value = document.getElementById('department').innerText;
-            document.getElementById('editWorkPhone').value = document.getElementById('workPhone').innerText;
-            document.getElementById('editPersonalPhone').value = document.getElementById('personalPhone').innerText;
-            document.getElementById('editEmail').value = document.getElementById('email').innerText;
-            document.getElementById('editBirthday').value = document.getElementById('birthday').innerText;
         }
 
         function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
+            document.getElementById("editModal").style.display = "none";
+        }
+
+        function openDeleteContactModal() {
+            if (!currentUser) return;
+            
+            const confirmText = document.getElementById('deleteConfirmText');
+            const fullName = `${currentUser.surname || ''} ${currentUser.name || ''}`.trim();
+            confirmText.textContent = `Вы уверены, что хотите удалить контакт "${fullName}"?`;
+            
+            document.getElementById("deleteContactModal").style.display = "flex";
+        }
+
+        function closeDeleteContactModal() {
+            document.getElementById("deleteContactModal").style.display = "none";
+        }
+
+        async function confirmDeleteContact() {
+            if (!currentUser || !currentInstitute) return;
+
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers?email=${encodeURIComponent(currentUser.email)}&institute=${currentInstitute}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Контакт успешно удален');
+                window.location.href = 'index.html';
+                } else {
+                    alert('Ошибка при удалении: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении контакта:', error);
+                alert('Ошибка при удалении контакта');
+            }
+            
+            closeDeleteContactModal();
         }
 
         function openPhotoUpload() {
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для изменения фотографии необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Открываем диалог выбора файла
             document.getElementById('photoInput').click();
         }
 
         function openPhotoDeleteModal() {
-            document.getElementById('deletePhotoModal').style.display = 'flex';
+            // Проверяем наличие токена авторизации
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления фотографии необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            document.getElementById('photoDeleteModal').style.display = 'flex';
         }
 
         function closePhotoDeleteModal() {
-            document.getElementById('deletePhotoModal').style.display = 'none';
+            document.getElementById('photoDeleteModal').style.display = 'none';
         }
 
-        function confirmPhotoDelete() {
-            document.getElementById('profileImage').src = 'placeholder.jpg';
-            closePhotoDeleteModal();
-        }
-
-        function openDeleteContactModal() {
-            const el = document.getElementById('deleteConfirmText');
-            el.innerText = `Вы уверены, что хотите удалить этот контакт?`;
-            el.classList.add('modal-subtitle');
-            document.getElementById('deleteContactModal').style.display = 'flex';
-        }
-
-        function closeDeleteContactModal() {
-            document.getElementById('deleteContactModal').style.display = 'none';
-        }
-
-        function confirmDeleteContact() {
-            if (contactRowToDelete) {
-                contactRowToDelete.remove();
-                contactRowToDelete = null;
+        async function confirmPhotoDelete() {
+            if (!currentUser || !currentInstitute) return;
+            
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                alert('Для удаления фотографии необходимо авторизоваться');
+                window.location.href = 'login.html';
+                return;
             }
-            closeDeleteContactModal();
+            
+            try {
+                const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(currentUser.email)}/photo?institute=${currentInstitute}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'Ok') {
+                    alert('Фотография успешно удалена');
+                    closePhotoDeleteModal();
+                    // Обновляем отображение фото
+                    loadUserPhoto(currentUser.email, currentInstitute);
+                } else {
+                    if (result.error && result.error.includes('forbidden')) {
+                        alert('У вас нет прав для удаления фотографий. Обратитесь к администратору.');
+                    } else {
+                        alert('Ошибка при удалении фотографии: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении фотографии:', error);
+                alert('Ошибка при удалении фотографии');
+            }
         }
 
-        document.getElementById('photoInput').addEventListener('change', function () {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('profileImage').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+        // Настройка обработчика для input файла
+        function setupPhotoInputHandler(photoInput) {
+            photoInput.addEventListener('change', async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                if (!currentUser || !currentInstitute) {
+                    alert('Ошибка: данные пользователя не загружены');
+                    return;
+                }
+                
+                const authToken = localStorage.getItem('authToken');
+                if (!authToken) {
+                    alert('Для изменения фотографии необходимо авторизоваться');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Проверяем размер файла (5 МБ)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Размер фотографии не должен превышать 5 МБ');
+                    this.value = '';
+                    return;
+                }
+                
+                // Проверяем тип файла
+                if (!file.type.startsWith('image/')) {
+                    alert('Пожалуйста, выберите файл изображения');
+                    this.value = '';
+                    return;
+                }
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    
+                    // Используем текущее состояние фото для определения метода
+                    const method = currentHasPhoto ? 'PUT' : 'POST';
+                    
+                    const response = await fetch(`${API_BASE}/workers/${encodeURIComponent(currentUser.email)}/photo?institute=${currentInstitute}`, {
+                        method: method,
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'Ok') {
+                        alert(`Фотография успешно ${currentHasPhoto ? 'обновлена' : 'загружена'}`);
+                        // Обновляем отображение фото
+                        loadUserPhoto(currentUser.email, currentInstitute);
+                    } else {
+                        if (result.error && result.error.includes('forbidden')) {
+                            alert('У вас нет прав для изменения фотографий. Обратитесь к администратору.');
+                        } else if (result.error && result.error.includes('already has a photo')) {
+                            alert('У пользователя уже есть фото. Обновите страницу и попробуйте снова.');
+                            loadUserPhoto(currentUser.email, currentInstitute);
+                        } else {
+                            alert('Ошибка при загрузке фотографии: ' + (result.error || 'Неизвестная ошибка'));
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке фотографии:', error);
+                    alert('Ошибка при загрузке фотографии');
+                }
+                
+                // Очищаем input для возможности повторной загрузки того же файла
+                this.value = '';
+            });
+        }
+
+        // Функции для работы с превью фото в модальном окне редактирования
+        function setupEditPhotoPreview() {
+            const editPhotoInput = document.getElementById('editPhoto');
+            if (editPhotoInput) {
+                editPhotoInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Проверяем размер файла
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('Размер фотографии не должен превышать 5 МБ');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Проверяем тип файла
+                        if (!file.type.startsWith('image/')) {
+                            alert('Пожалуйста, выберите файл изображения');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        // Показываем превью
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const previewDiv = document.getElementById('editPhotoPreview');
+                            const previewImg = document.getElementById('editPreviewImage');
+                            
+                            previewImg.src = e.target.result;
+                            previewDiv.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
             }
-        });
+        }
+        
+        function removeEditPhotoPreview() {
+            const editPhotoInput = document.getElementById('editPhoto');
+            const previewDiv = document.getElementById('editPhotoPreview');
+            
+            if (editPhotoInput) editPhotoInput.value = '';
+            if (previewDiv) previewDiv.style.display = 'none';
+        }
 
+        // Инициализируем превью фотографии для редактирования
+        setupEditPhotoPreview();
 
+        window.onclick = function (event) {
+            if (event.target === document.getElementById("editModal")) {
+                closeEditModal();
+            }
+            if (event.target === document.getElementById("deleteContactModal")) {
+                closeDeleteContactModal();
+            }
+            if (event.target === document.getElementById("photoDeleteModal")) {
+                closePhotoDeleteModal();
+            }
+        };
 
-        document.getElementById('editForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            document.getElementById('fullName').innerText = document.getElementById('editName').value;
-            document.getElementById('position').innerText = document.getElementById('editPosition').value;
-            document.getElementById('department').innerText = document.getElementById('editDepartment').value;
-            document.getElementById('workPhone').innerText = document.getElementById('editWorkPhone').value;
-            document.getElementById('personalPhone').innerText = document.getElementById('editPersonalPhone').value;
-            document.getElementById('email').innerText = document.getElementById('editEmail').value;
-            document.getElementById('birthday').innerText = document.getElementById('editBirthday').value;
-            closeEditModal();
-        });
     </script>
 </body>
 
