@@ -54,7 +54,7 @@ func New(ctx context.Context, log *slog.Logger, userCreater UserImporter) http.H
 			return
 		}
 
-		err := r.ParseMultipartForm(100 << 20) // 100 MB limit
+		err := r.ParseMultipartForm(1024 << 20) // 100 MB limit
 		if err != nil {
 			log.Error("failed to parse multipart form", sl.Err(err))
 			render.JSON(w, r, resp.Error("failed to parse form data"))

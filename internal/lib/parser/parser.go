@@ -39,7 +39,7 @@ func Excel(file multipart.File) ([]models.User, error) {
 			continue
 		}
 
-		birthDate, err := time.Parse(layout, getValue(row, 8))
+		birthDate, err := time.Parse(layout, getValue(row, 9))
 		if err != nil {
 			birthDate = time.Time{} // если не удалось, оставляем пустую дату
 		}
@@ -53,8 +53,9 @@ func Excel(file multipart.File) ([]models.User, error) {
 			Cabinet:     getValue(row, 5),
 			Position:    getValue(row, 6),
 			Department:  getValue(row, 7),
+			Section:     getValue(row, 8),
 			BirthDate:   birthDate,
-			Description: getValue(row, 8),
+			Description: getValue(row, 10),
 		}
 
 		users = append(users, user)
