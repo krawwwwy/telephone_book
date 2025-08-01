@@ -30,6 +30,9 @@ import (
 	"telephone-book/internal/lib/logger/slogpretty"
 	"telephone-book/internal/storage/postgresql"
 
+	"strings"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -62,6 +65,28 @@ func main() {
 	}
 
 	log.Info("sso client initialized successfully", slog.Any("sso", cfg.Clients.SSO))
+
+	// Создаем админа krawy при запуске с retry логикой
+	log.Info("creating default admin user krawy")
+	var adminCreated bool
+	for i := 0; i < 5; i++ {
+		_, err = ssoClient.Register(context.Background(), "krawy@krawy.ru", "krawy", "admin")
+		if err == nil {
+			log.Info("admin user krawy created successfully")
+			adminCreated = true
+			break
+		} else if strings.Contains(err.Error(), "already exists") {
+			log.Info("admin user krawy already exists")
+			adminCreated = true
+			break
+		} else {
+			log.Warn("failed to create admin user krawy, retrying...", sl.Err(err), slog.Int("attempt", i+1))
+			time.Sleep(time.Second * 5)
+		}
+	}
+	if !adminCreated {
+		log.Error("failed to create admin user krawy after 5 attempts")
+	}
 
 	storage, err := postgresql.New(cfg.StoragePath)
 	if err != nil {

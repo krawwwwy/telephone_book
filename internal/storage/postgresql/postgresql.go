@@ -295,19 +295,25 @@ func (s *Storage) GetTomorrowsBirthdays(ctx context.Context, institute string) (
 func (s *Storage) getBirthdaysByOffset(ctx context.Context, institute string, dayOffset int) ([]models.User, error) {
 	const op = "storage.postgresql.getBirthdaysByOffset"
 
-	if err := s.SetSchema(ctx, institute); err != nil {
-		return nil, err
+	var schema string
+	switch institute {
+	case "grafit", "графит", "Графит", "Grafit":
+		schema = "grafit"
+	case "giredmet", "Giredmet", "гиредмет", "Гиредмет":
+		schema = "giredmet"
+	default:
+		return nil, storage.ErrSchemaNotExist
 	}
 
 	// SQL: выбираем по смещению от текущей даты
 	query := fmt.Sprintf(`
         SELECT id, surname, name, middle_name, email, phone_number, cabinet, position, department, birth_date
-        FROM workers
+        FROM %s.workers
         WHERE birth_date IS NOT NULL 
           AND EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE + INTERVAL '%d day')
           AND EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE + INTERVAL '%d day')
         ORDER BY surname, name
-    `, dayOffset, dayOffset)
+    `, schema, dayOffset, dayOffset)
 
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
