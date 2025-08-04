@@ -7,6 +7,6 @@ http_server:
   idle_timeout: 60s
 clients:
   sso:
-    address: "sso:44044"
+    address: "0.0.0.0:44044"
     timeout: 10h
     retries_count: 3 
