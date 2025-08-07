@@ -3,7 +3,7 @@ package main
 // @title Telephone Book API
 // @version 1.0
 // @description API для телефонного справочника
-// @host localhost:8080
+// @host
 // @BasePath /
 
 import (
